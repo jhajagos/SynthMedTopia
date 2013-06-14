@@ -1,0 +1,25 @@
+{
+    "age.gender.f" :
+    {
+        "minimum" : 20.0,
+        "maximum" : 45.0,
+        "type" : "real",
+        "distribution" : {
+            "type" : "normal",
+            "mean" : 25,
+            "standard_deviation" : 3
+        },
+        "correlation" : ""},
+        "age.gender.m" :
+        {
+            "minimum" : 20.0,
+            "maximum" : 45.0,
+            "type" : "real",
+            "distribution" : {
+                "type" : "normal",
+                "mean" : 25,
+                "standard_deviation" : 3
+            },
+            "correlation" : ""
+    }
+}
