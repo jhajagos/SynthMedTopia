@@ -11,7 +11,7 @@ import numpy as np
 import pprint
 
 HOSPITALS = {1: "HA", 2: "HB", 3: "HC", 4: "HD", 5: "HE"}
-PATIENTS = {1: "p1", 2: "p2", 3: "p3", 4: "p4", 5: "p5", 6: "p6", 7: "p7"}
+PATIENTS = {1: "p1", 2: "p2", 3: "p3", 4: "p4", 5: "p5", 6: "p6", 7: "p7", 8: "p8"}
 
 CASES =[
     {
@@ -72,7 +72,7 @@ CASES =[
                2222
                                 11111111
     """},
-    {"patient": 6, "case": "Subclaims",
+    {"patient": 8, "case": "Subclaims",
     "pattern of visits":"""
     22222222222222
       2
@@ -138,7 +138,7 @@ def generate_cases_as_csv(start_date, cases, patient_dict, hospital_dict, outfil
                     if state == "before":
                         start_j = j
                         state = "during"
-                else:
+                elif parsed_case[i, j] == 0:
                     if state == "during":
                         end_j = j - 1
                         provider = parsed_case[i, j-1]
@@ -155,6 +155,7 @@ def generate_cases_as_csv(start_date, cases, patient_dict, hospital_dict, outfil
 
                         case_list_dict += [visit]
                         state = "before"
+                        start_j = 0
             if state == "during":
                 end_j = j - 1
                 provider = parsed_case[i, j-1]
