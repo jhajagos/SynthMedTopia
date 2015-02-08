@@ -15,7 +15,6 @@ def main(csv_file_name, columns_to_add_random_noise, sample_size=10, one_observa
     for column in columns_to_add_random_noise:
             dict_values_pass_through[column] = {"min": None, "max": None}
 
-
     with open(csv_file_name, "rU") as f:
         csv_dict_reader = csv.DictReader(f)
         n = 0

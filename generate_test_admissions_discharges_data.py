@@ -8,8 +8,9 @@ __author__ = 'janos'
 import datetime as dt
 import csv
 import numpy as np
+import pprint
 
-HOSPITALS = {1: "HA", 2: "HB", 3: "HC", 4: "HD"}
+HOSPITALS = {1: "HA", 2: "HB", 3: "HC", 4: "HD", 5: "HE"}
 PATIENTS = {1: "p1", 2: "p2", 3: "p3", 4: "p4", 5: "p5", 6: "p6", 7: "p7"}
 
 CASES =[
@@ -84,7 +85,6 @@ CASES =[
 
          ]
 
-
 def parse_pattern_of_visits(pattern_of_visits):
 
     max_line = 0
@@ -141,7 +141,6 @@ def generate_cases_as_csv(start_date, cases, patient_dict, hospital_dict, outfil
                 else:
                     if state == "during":
                         end_j = j - 1
-                        state = "before"
                         provider = parsed_case[i, j-1]
                         provider_name = hospital_dict[provider]
                         start_date = convert_date_with_add_to_odbc(year, month, day, start_j)
@@ -155,18 +154,36 @@ def generate_cases_as_csv(start_date, cases, patient_dict, hospital_dict, outfil
                                  }
 
                         case_list_dict += [visit]
+                        state = "before"
+            if state == "during":
+                end_j = j - 1
+                provider = parsed_case[i, j-1]
+                provider_name = hospital_dict[provider]
+                start_date = convert_date_with_add_to_odbc(year, month, day, start_j)
+                end_date = convert_date_with_add_to_odbc(year, month, day, end_j)
 
-    import pprint
+                visit = {"start_day": start_j, "end_day": end_j, "patient_id": patient,
+                        "provider_id": provider, "provider_name": provider_name,
+                        "start_date": start_date, "end_date": end_date, "patient_name": patient_name,
+                        "length_of_stay": end_j - start_j, "transaction_id": transaction_id,
+                        "visit_type": "inpatient"
+                         }
+
+                case_list_dict += [visit]
+
+
+
     pprint.pprint(case_list_dict)
 
     header = ["transaction_id", "patient_id", "patient_name", "provider_id", "provider_name", "start_day",
-              "start_date", "end_day", "end_date", "length_of_stay", "visit_type"]
+              "end_day", "start_date", "end_date", "length_of_stay", "visit_type"]
 
     with open(outfile_csv, "wb") as fw:
         csv_writer = csv.writer(fw)
         csv_writer.writerow(header)
 
         for row_dict in case_list_dict:
+
             row = []
             for field in header:
                 row += [row_dict[field]]
@@ -181,6 +198,7 @@ def print_cases(cases, patient_dict):
         print(patient["pattern of visits"])
         print("*" * 70)
         print(parse_pattern_of_visits(patient["pattern of visits"]))
+
 
 
 if __name__ == "__main__":
