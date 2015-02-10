@@ -1,7 +1,7 @@
 __author__ = 'janos'
 
 """
-    Load "inpatient_visits_test.csv" into a PostGreSQL database.
+    Load "inpatient_visits_test.csv" into a PostgreSQL database.
 """
 
 import sqlalchemy as sa
@@ -20,8 +20,8 @@ def main():
        provider_id integer,
        provider_name VARCHAR(255),
        start_day INTEGER,
-       start_date date,
        end_day INTEGER,
+       start_date date,
        end_date date,
        length_of_stay INTEGER,
        visit_type VARCHAR(15),
@@ -66,10 +66,20 @@ def main():
 
         sql_string = "update inpatient_admission_test set day_range = int4range(start_day, end_day + 1, '[)')"
         print(sql_string)
-        cursor.execute(sql_string)
+        cursor.execute(sql_string + ";")
 
         sql_string = "update inpatient_admission_test set date_range = daterange(start_date, end_date + 1, '[)')"
         cursor.execute(sql_string)
+        print(sql_string + ";")
+
+        sql_string = "alter table inpatient_admission_test add union_day_range int4range"
+        cursor.execute(sql_string)
+        print(sql_string + ";")
+
+        sql_string = "update inpatient_admission_test set union_day_range = day_range"
+        cursor.execute(sql_string)
+        print(sql_string + ";")
+
 
 if __name__ == "__main__":
     main()
