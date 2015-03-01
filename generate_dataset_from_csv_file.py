@@ -8,6 +8,7 @@ import math
 def logger(string_to_log=""):
     print(string_to_log)
 
+
 def main(csv_file_name, columns_to_add_random_noise, sample_size=10, one_observation_per_person=True, identifier_name = "mrn"):
     """columns_to_add_random_noise = ["BP","blood temperature"]"""
 

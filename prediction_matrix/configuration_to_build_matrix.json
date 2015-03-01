@@ -1,0 +1,59 @@
+ [
+    {"path": ["independent", "classes", "discharge"],
+     "variables": [
+         {"cell_value": "age",
+          "type": "integer"
+         },
+         {
+          "cell_value": "gender",
+          "type": "categorical"
+         }
+     ],
+     "type": "variables"
+    },
+    {
+        "path": ["independent", "classes", "diagnosis"],
+        "type": "categorical_list",
+        "process": "encode_on_cell_value",
+        "field": "code",
+        "label": "code",
+        "cell_value": "sequence_id",
+        "description": "description"
+    },
+    {
+        "path": ["independent", "classes", "lab"],
+        "type": "classes_templates",
+        "class_type": "variables",
+        "class_template":
+            {
+                "process": "last_item",
+                "type": "numeric_list",
+                "cell_value": "value"
+            }
+    },
+    {
+        "path": ["dependent", "classes", "discharge"],
+        "variables": [
+            {
+                "cell_value": "has_30_day_readmit",
+                "type": "categorical"
+            },
+            {
+                "cell_value": "days_to_readmit",
+                "type": "integer"
+            }
+        ],
+        "type": "variables"
+    },
+    {
+        "path": ["independent", "classes", "vitals"],
+        "variables": [
+            {
+                "process": "median",
+                "type": "numeric_list",
+                "cell_value": "rate",
+                "name": "pulse"
+            }],
+        "type": "variables"
+    }
+]

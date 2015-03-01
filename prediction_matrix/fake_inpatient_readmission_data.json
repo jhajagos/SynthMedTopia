@@ -1,0 +1,94 @@
+{
+    "555" : {
+        "independent": {
+            "classes" : {
+                "lab": {
+                    "BUN": [
+                        {
+                            "value": 5
+                        },
+                        {
+                            "value": 5
+                        },
+                        {
+                            "value": 6
+                        }
+                    ]
+                },
+                "discharge":
+                {
+                    "age": 50,
+                    "gender": "M"
+                },
+                "diagnosis":
+                [
+                    {"code": "1", "description": "issues"},
+                    {"code": "5", "description": "serious problems"},
+                    {"code": "4", "description": "more issues"}
+                ],
+                "pulse":
+                    [
+                        {"rate": 55},
+                        {"rate": 60},
+                        {"rate": 70},
+                        {"rate": 40}
+                    ]
+            }
+        },
+        "dependent": {
+            "classes": {
+                "discharge": {
+                    "has_30_day_readmit": 1,
+                    "days_to_readmit": 40
+                }
+            }
+
+        }
+    },
+    "777" : {
+        "independent": {
+            "classes": {
+                "lab": {
+                    "BUN": [
+                        {
+                            "value": 1
+                        },
+                        {
+                            "value": 3
+                        },
+                        {
+                            "value": 2
+                        }
+                    ],
+                    "Troponin": [
+                        {
+                            "value": 0.1
+                        }
+                    ]
+                },
+                "discharge": {
+                    "age": 58,
+                    "gender": "F"
+                },
+                "diagnosis": [
+                    {
+                        "code": "1",
+                        "description": "issues"
+                    },
+                    {
+                        "code": "2",
+                        "description": "problems"
+                    }
+                ]
+            }
+        },
+        "dependent": {
+            "classes": {
+                "discharge": {
+                    "has_30_day_readmit": 0,
+                    "days_to_readmit": 40
+                }
+            }
+        }
+    }
+}
