@@ -61,28 +61,27 @@ def add_offsets_to_translation_dict(template_list_dict):
         if template_type == "variables":
             variable_dicts = template_dict["variables"]
             offset_start = 0
-            offset_end = 0
+
             for variable_dict in variable_dicts:
 
                 variable_type = variable_dict["type"]
-                if variable_type == "categorization":
+                if variable_type == "categorical":
                     n_categories = variable_dict["n_categories"]
-
-                    offset_end += n_categories - 1
+                    offset_end = offset_start + n_categories
                 else:
                     offset_end = offset_start + 1
 
                 variable_dict["offset_start"] = offset_start
                 variable_dict["offset_end"] = offset_end
 
-                offset_start += 1
+                offset_start = variable_dict["offset_end"]
 
         elif template_type == "categorical_list":
             n_categories = template_dict["n_categories"]
-            offset_end = n_categories - 1
+            offset_end = n_categories
 
             template_dict["offset_start"] = 0
-            template_dict["offset_end"] = offset_end + 1
+            template_dict["offset_end"] = offset_end
 
     return template_list_dict
 
@@ -167,6 +166,7 @@ def build_translation_dict(data_dict, template_list_dict):
 
     return template_list_dict
 
+
 def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
     """Each class will be a dataset in a hdf5 matrix"""
 
@@ -189,6 +189,8 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
             core_array = np.zeros(shape=(data_items_count, offset_end))
             column_annotations = np.empty(shape=(2, offset_end), dtype="S64")
+        #TODO add categorical_list
+        #TODO add column annotations
 
         if template_type == "variables":
 
@@ -197,6 +199,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                 print(variable_dict)
                 variable_type = variable_dict["type"]
                 cell_value_field = variable_dict["cell_value"]
+
                 if variable_type == "categorical":
                     position_map = variable_dict["position_map"]
                     i = 0
@@ -211,28 +214,54 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                         i += 1
                 else:
                     i = 0
+                    if "process" in variable_dict:
+                        process = variable_dict["process"]
+                        variable_name = variable_dict["name"]
+                    else:
+                        process = None
+                        variable_name = None
+
                     for data_key in data_dict:
                         datum_dict = data_dict[data_key]
                         dict_of_interest = get_entry_from_path(datum_dict, path)
-                        if cell_value_field in dict_of_interest:
-                            field_value = dict_of_interest[cell_value_field]
-                            core_array[i, offset_start] = field_value
+
+                        if dict_of_interest is not None:
+                            if variable_name in dict_of_interest:
+                                list_of_interest = dict_of_interest[variable_name]
+                                if list_of_interest is not None:
+                                    if variable_type == 'numeric_list':
+                                        if process == "median":
+
+                                            process_list = []
+                                            for item in list_of_interest:
+                                                if cell_value_field in item:
+                                                    process_list += [item[cell_value_field]]
+                                            process_array = np.array(process_list)
+                                            median_value = np.median(process_array)
+                                            core_array[i, offset_start] = median_value
+
+                                        elif process == "last_item":
+                                            process_list = []
+                                            for item in list_of_interest:
+                                                if cell_value_field in item:
+                                                    process_list += [item[cell_value_field]]
+                                            core_array[i, offset_start] = process_list[-1]
+
+                            if cell_value_field in dict_of_interest:
+                                field_value = dict_of_interest[cell_value_field]
+                                core_array[i, offset_start] = field_value
                         i += 1
-
-
-
-            print(core_array)
 
         if template_type in ("variables", "categorization_list"):
 
             hdf5_column_annotation_path = "/" + hdf5_base_path + "/column_annotations/"
 
-            core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end + 1))
+            core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end))
             core_data_set[...] = core_array
 
             print(hdf5_core_array_path, hdf5_column_annotation_path)
-
-            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(data_items_count, offset_end + 1), dtype="S64")
+            print(core_array)
+            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(data_items_count, offset_end), dtype="S64")
             column_data_set[...] = column_annotations
 
 

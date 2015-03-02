@@ -46,7 +46,7 @@
         "type": "variables"
     },
     {
-        "path": ["independent", "classes", "vitals"],
+        "path": ["independent", "classes", "pulse"],
         "variables": [
             {
                 "process": "median",
