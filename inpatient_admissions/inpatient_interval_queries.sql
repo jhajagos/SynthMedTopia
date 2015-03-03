@@ -15,7 +15,7 @@ update inpatient_admission_test iat0 set
     where iat0.transaction_id = t.transaction_id;
     
 
- /* This table will hold the ranges that span a single inpatient stay */
+ /* This table will hold the ranges that span a single inpatient sstay */
  
 drop table if exists inpatient_event_ranges;        
 create table inpatient_event_ranges 
@@ -44,16 +44,18 @@ create table inpatient_paired_past_discharges as
 drop table if exists inpatient_events_with_readmission;
 create table inpatient_events_with_readmission as 
   select ier.id, ier.patient_id, ier.union_day_range, ier.length_of_stay_in_days,
-    t.id_last_admission, t.days_since_last_discharge
+    tt.id_last_admission, tt.days_since_last_discharge
     from inpatient_event_ranges ier left outer join (
       select distinct ippd.target_id as id_current_admission, previous_id as id_last_admission, 
         t.min_days_since_last_discharge + 1 as days_since_last_discharge
-        from inpatient_paired_past_discharges ippd join (        
-        select target_id, patient_id, min(days_since_paired_discharge) as min_days_since_last_discharge 
-        from inpatient_paired_past_discharges group by target_id, patient_id)
-        t on ippd.target_id = ippd.target_id and 
-          t.min_days_since_last_discharge  = ippd.days_since_paired_discharge) t 
-            on ier.id = t.id_current_admission;
+        from inpatient_paired_past_discharges ippd join 
+        (        
+          select target_id, patient_id, min(days_since_paired_discharge) as min_days_since_last_discharge 
+            from inpatient_paired_past_discharges group by target_id, patient_id    
+        ) t 
+          on t.target_id = ippd.target_id and 
+          t.min_days_since_last_discharge  = ippd.days_since_paired_discharge) tt 
+          on ier.id = tt.id_current_admission;
 
 /* Add in forward chains */
 alter table inpatient_events_with_readmission add id_next_admission int;
