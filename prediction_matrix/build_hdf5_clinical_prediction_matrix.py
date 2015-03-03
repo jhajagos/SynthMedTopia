@@ -20,6 +20,72 @@ def get_entry_from_path(dict_with_path, path_list):
     return dict_with_path
 
 
+def generate_column_annotations_categorical_list(categorical_list_dict, column_annotations):
+    position_map = categorical_list_dict["position_map"]
+    name = categorical_list_dict["name"]
+    descriptions = categorical_list_dict["descriptions"]
+
+
+    position_map_reverse = {}
+    for k in position_map:
+        v = position_map[k]
+        position_map_reverse[v] = k
+
+    for i in range(categorical_list_dict["n_categories"]):
+        value = position_map_reverse[i]
+        if value in descriptions:
+            description = descriptions[value]
+        else:
+            description = ""
+
+        column_annotations[0, i] = name
+        column_annotations[1, i] = value
+        column_annotations[2, i] = description
+
+
+    return column_annotations
+
+def generate_column_annotations_variables(variables_dict, column_annotations):
+    """Generate column annotations based on variables"""
+
+    for variable_dict in variables_dict["variables"]:
+        offset_start = variable_dict["offset_start"]
+        variable_type = variable_dict["type"]
+        if variable_type == "categorical":
+            position_map = variable_dict["position_map"]
+
+            position_map_reverse = {}
+            for k in position_map:
+                v = position_map[k]
+                position_map_reverse[v] = k
+
+            for i in range(len(position_map.keys())):
+
+                value = position_map_reverse[i]
+
+                field_value = variable_dict["cell_value"]
+
+                descriptions = variable_dict["descriptions"]
+                if value in descriptions:
+                    description = descriptions[value]
+                else:
+                    description = ""
+
+                column_annotations[0, offset_start + i] = field_value
+                column_annotations[1, offset_start + i] = value
+                column_annotations[2, offset_start + i] = description
+        else:
+            field_name = variable_dict["cell_value"]
+
+            if variable_type == "numeric_list":
+                column_annotations[0, offset_start ] = variable_dict["name"]
+                column_annotations[1, offset_start] = field_name
+                column_annotations[2, offset_start] = variable_dict["process"]
+            else:
+                column_annotations[0, offset_start] = field_name
+
+    return column_annotations
+
 def expand_template_dict(data_dict, template_list_dict):
     """Expand out to more detail based on encoded data in a data_dict"""
     new_templates = []
@@ -117,7 +183,6 @@ def build_translation_dict(data_dict, template_list_dict):
                                 if "label" in variable_dict:
                                     label_dict[value_of_interest] = dict_of_interest[variable_dict["label"]]
 
-
                     data_keys = item_dict.keys()
                     data_keys.sort()
 
@@ -188,7 +253,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
         if template_type in ("variables", "categorical_list"):
             core_array = np.zeros(shape=(data_items_count, offset_end))
-            column_annotations = np.empty(shape=(2, offset_end), dtype="S64")
+            column_annotations = np.zeros(shape=(3, offset_end), dtype="S64")
         #TODO add categorical_list
 
         if template_type == "variables":
@@ -281,10 +346,21 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
             core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end))
             core_data_set[...] = core_array
 
+            print("***************************")
             print(hdf5_core_array_path, hdf5_column_annotation_path)
             print(core_array)
 
-            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(data_items_count, offset_end), dtype="S64")
+            if template_type == "variables":
+                column_annotations = generate_column_annotations_variables(data_translate_dict, column_annotations)
+                print(column_annotations)
+            elif template_type == "categorical_list":
+                column_annotations = generate_column_annotations_categorical_list(data_translate_dict, column_annotations)
+                print(column_annotations)
+            else:
+                pass
+            print("***************************")
+
+            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(3, offset_end), dtype="S64")
             column_data_set[...] = column_annotations
 
 
