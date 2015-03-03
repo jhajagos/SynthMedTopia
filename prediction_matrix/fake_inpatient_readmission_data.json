@@ -79,6 +79,11 @@
                         "code": "2",
                         "description": "problems"
                     }
+                ],
+                "pulse": [
+                    {"rate": 110},
+                    {"rate": 105},
+                    {"rate": 120}
                 ]
             }
         },

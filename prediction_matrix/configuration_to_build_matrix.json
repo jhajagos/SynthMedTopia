@@ -14,10 +14,10 @@
     {
         "path": ["independent", "classes", "diagnosis"],
         "type": "categorical_list",
-        "process": "encode_on_cell_value",
+        "process": "list_position",
         "field": "code",
         "label": "code",
-        "cell_value": "sequence_id",
+        "cell_value": "code",
         "description": "description"
     },
     {
