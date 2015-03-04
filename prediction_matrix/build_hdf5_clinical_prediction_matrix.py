@@ -4,7 +4,7 @@ import json
 import h5py
 import numpy as np
 import pprint
-
+import sys
 
 def get_entry_from_path(dict_with_path, path_list):
     """Traverses a path list in a dict of dicts"""
@@ -21,6 +21,7 @@ def get_entry_from_path(dict_with_path, path_list):
 
 
 def generate_column_annotations_categorical_list(categorical_list_dict, column_annotations):
+    """Generate column annotations when it is a column list"""
     position_map = categorical_list_dict["position_map"]
     name = categorical_list_dict["name"]
     descriptions = categorical_list_dict["descriptions"]
@@ -152,9 +153,6 @@ def add_offsets_to_translation_dict(template_list_dict):
     return template_list_dict
 
 
-
-
-
 def build_translation_dict(data_dict, template_list_dict):
     """For categorical variables build lookup dicts"""
     for template_dict in template_list_dict:
@@ -254,7 +252,6 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
         if template_type in ("variables", "categorical_list"):
             core_array = np.zeros(shape=(data_items_count, offset_end))
             column_annotations = np.zeros(shape=(3, offset_end), dtype="S64")
-        #TODO add categorical_list
 
         if template_type == "variables":
 
@@ -346,18 +343,27 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
             core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end))
             core_data_set[...] = core_array
 
-            print("***************************")
+            print("\n***************************")
+
             print(hdf5_core_array_path, hdf5_column_annotation_path)
+            print("Core array:")
             print(core_array)
+
+            column_header_path = "/" + hdf5_base_path + "/column_header/"
+            column_header_set = hdf5p.create_dataset(column_header_path, shape=(3,), dtype="S16")
+            column_header_set[...] = np.array(["field_name", "value", "description"])
+            print("\nAnnotations:")
+            print(np.transpose(column_header_set[...]))
 
             if template_type == "variables":
                 column_annotations = generate_column_annotations_variables(data_translate_dict, column_annotations)
                 print(column_annotations)
             elif template_type == "categorical_list":
                 column_annotations = generate_column_annotations_categorical_list(data_translate_dict, column_annotations)
-                print(column_annotations)
-            else:
-                pass
+
+            print(column_annotations)
+
+
             print("***************************")
 
             column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(3, offset_end), dtype="S64")
@@ -365,18 +371,20 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
 
 def main(hdf5_file_name, data_json_file, data_template_json):
+    """Convert a JSON file to a HDF5 matrix format using a template"""
+
+    #Import JSON files
     with open(data_json_file, "r") as f:
         data_dict = json.load(f)
-        #pprint.pprint(data_dict)
 
     with open(data_template_json, "r") as f:
         data_template_dict = json.load(f)
-        #pprint.pprint(data_template_dict)
 
     data_template_dict = expand_template_dict(data_dict, data_template_dict)
     data_translate_dict = build_translation_dict(data_dict, data_template_dict)
     data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
 
+    print("Generated data template:\n")
     pprint.pprint(data_translate_dict)
     f5p = h5py.File(hdf5_file_name, "w")
 
@@ -384,4 +392,10 @@ def main(hdf5_file_name, data_json_file, data_template_json):
 
 
 if __name__ == "__main__":
-    main("matrix_build.hdf5", "fake_inpatient_readmission_data.json", "configuration_to_build_matrix.json")
+
+    if len(sys.argv) == 4:
+        print("")
+    elif len(sys.argv) == 2 and sys.argv[1] == "help":
+        print("Usage: python build_hdf5_clinical_prediction_matrix.py output.hdf5 data_file.json data_template.json")
+    else:
+        main("matrix_build.hdf5", "fake_inpatient_readmission_data.json", "configuration_to_build_matrix.json")
