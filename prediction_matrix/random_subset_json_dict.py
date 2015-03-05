@@ -37,4 +37,4 @@ def main(json_dict_file_name, n_samples):
         json.dump(sampled_dict, fwj, sort_keys=True, indent=4, separators=(',',': '))
 
 if __name__ == "__main__":
-    main(sys.argv[1], int(sys.arv[2]))
+    main(sys.argv[1], int(sys.argv[2]))
