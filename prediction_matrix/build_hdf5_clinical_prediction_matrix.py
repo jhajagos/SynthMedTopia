@@ -357,12 +357,10 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
             if template_type == "variables":
                 column_annotations = generate_column_annotations_variables(data_translate_dict, column_annotations)
-                print(column_annotations)
             elif template_type == "categorical_list":
                 column_annotations = generate_column_annotations_categorical_list(data_translate_dict, column_annotations)
 
             print(column_annotations)
-
 
             print("***************************")
 
