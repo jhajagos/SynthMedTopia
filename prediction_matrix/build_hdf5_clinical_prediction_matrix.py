@@ -99,9 +99,10 @@ def expand_template_dict(data_dict, template_list_dict):
             for data_key in data_dict:
                 data = data_dict[data_key]
                 entries = get_entry_from_path(data, path)
-                for key in entries:
-                    if key not in entry_classes:
-                        entry_classes += [key]
+                if entries is not None:
+                    for key in entries:
+                        if key not in entry_classes:
+                            entry_classes += [key]
             template_class = template_dict["class_template"]
             entry_classes_dict = []
             for entry in entry_classes:
@@ -201,19 +202,19 @@ def build_translation_dict(data_dict, template_list_dict):
             for data_key in data_dict:
                 datum_dict = data_dict[data_key]
                 dicts_of_interest = get_entry_from_path(datum_dict, path)
+                if dicts_of_interest is not None:
+                    for dict_of_interest in dicts_of_interest:
 
-                for dict_of_interest in dicts_of_interest:
-
-                    if template_dict["field"] in dict_of_interest:
-                        value_of_interest = str(dict_of_interest[template_dict["field"]])
-                        if value_of_interest in item_dict:
-                            item_dict[value_of_interest] += 1
-                        else:
-                            item_dict[value_of_interest] = 1
-                            if "description" in template_dict:
-                                description_dict[value_of_interest] = dict_of_interest[template_dict["description"]]
-                            if "label" in template_dict:
-                                label_dict[value_of_interest] = dict_of_interest[template_dict["label"]]
+                        if template_dict["field"] in dict_of_interest:
+                            value_of_interest = str(dict_of_interest[template_dict["field"]])
+                            if value_of_interest in item_dict:
+                                item_dict[value_of_interest] += 1
+                            else:
+                                item_dict[value_of_interest] = 1
+                                if "description" in template_dict:
+                                    description_dict[value_of_interest] = dict_of_interest[template_dict["description"]]
+                                if "label" in template_dict:
+                                    label_dict[value_of_interest] = dict_of_interest[template_dict["label"]]
 
             data_keys = item_dict.keys()
             data_keys.sort()
@@ -301,7 +302,9 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                                             process_list = []
                                             for item in list_of_interest:
                                                 if cell_value_field in item:
-                                                    process_list += [item[cell_value_field]]
+                                                    cell_value = item[cell_value_field]
+                                                    if cell_value is not None:
+                                                        process_list += [cell_value]
                                             process_array = np.array(process_list)
                                             median_value = np.median(process_array)
                                             core_array[i, offset_start] = median_value
@@ -326,14 +329,15 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                 datum_dict = data_dict[data_key]
                 dict_of_interest = get_entry_from_path(datum_dict, path)
 
-                j = 0
-                for item_dict in dict_of_interest:
-                    if cell_value_field in item_dict:
-                        field_value = item_dict[cell_value_field]
-                        position = position_map[field_value]
-                        if core_array[i, position] == 0:
-                            core_array[i, position] = j
-                    j += 1
+                if dict_of_interest is not None:
+                    j = 0
+                    for item_dict in dict_of_interest:
+                        if cell_value_field in item_dict:
+                            field_value = item_dict[cell_value_field]
+                            position = position_map[str(field_value)]
+                            if core_array[i, position] == 0:
+                                core_array[i, position] = j
+                        j += 1
                 i += 1
 
         if template_type in ("variables", "categorical_list"):
@@ -357,10 +361,13 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
             if template_type == "variables":
                 column_annotations = generate_column_annotations_variables(data_translate_dict, column_annotations)
+                print(column_annotations)
+
             elif template_type == "categorical_list":
                 column_annotations = generate_column_annotations_categorical_list(data_translate_dict, column_annotations)
 
             print(column_annotations)
+
 
             print("***************************")
 
@@ -392,7 +399,7 @@ def main(hdf5_file_name, data_json_file, data_template_json):
 if __name__ == "__main__":
 
     if len(sys.argv) == 4:
-        print("")
+        main(sys.argv[1], sys.argv[2], sys.argv[3])
     elif len(sys.argv) == 2 and sys.argv[1] == "help":
         print("Usage: python build_hdf5_clinical_prediction_matrix.py output.hdf5 data_file.json data_template.json")
     else:
