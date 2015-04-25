@@ -21,6 +21,17 @@
         "cell_value": "code",
         "description": "description"
     },
+     {
+        "path": ["independent", "classes", "diagnosis"],
+        "export_path": ["independent", "classes", "diagnosis2"],
+        "type": "categorical_list",
+        "process": "list_position",
+        "field": "code",
+        "name": "discharge_diagnosis",
+        "label": "code",
+        "cell_value": "code",
+        "description": "description"
+    },
     {
         "path": ["independent", "classes", "lab"],
         "type": "classes_templates",

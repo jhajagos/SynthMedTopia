@@ -239,9 +239,14 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
     for data_translate_dict in data_translate_dict_list:
         template_type = data_translate_dict["type"]
 
+        if "export_path" in data_translate_dict:
+            export_path = data_translate_dict["export_path"]
+        else:
+            export_path = data_translate_dict["path"]
+
         path = data_translate_dict["path"]
 
-        hdf5_base_path = "/".join(path)
+        hdf5_base_path = "/".join(export_path)
         hdf5_core_array_path = "/" + hdf5_base_path + "/core_array/"
 
         if template_type == "variables":
@@ -367,7 +372,6 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                 column_annotations = generate_column_annotations_categorical_list(data_translate_dict, column_annotations)
 
             print(column_annotations)
-
 
             print("***************************")
 
