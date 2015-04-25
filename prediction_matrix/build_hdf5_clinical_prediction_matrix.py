@@ -6,6 +6,7 @@ import numpy as np
 import pprint
 import sys
 
+
 def get_entry_from_path(dict_with_path, path_list):
     """Traverses a path list in a dict of dicts"""
     while len(path_list):
@@ -26,7 +27,6 @@ def generate_column_annotations_categorical_list(categorical_list_dict, column_a
     name = categorical_list_dict["name"]
     descriptions = categorical_list_dict["descriptions"]
 
-
     position_map_reverse = {}
     for k in position_map:
         v = position_map[k]
@@ -39,12 +39,12 @@ def generate_column_annotations_categorical_list(categorical_list_dict, column_a
         else:
             description = ""
 
-        column_annotations[0, i] = name
-        column_annotations[1, i] = value
-        column_annotations[2, i] = description
-
+        column_annotations[0, i] = name.encode("ascii", errors="replace")
+        column_annotations[1, i] = value.encode("ascii", errors="replace")
+        column_annotations[2, i] = description.encode("ascii", errors="replace")
 
     return column_annotations
+
 
 def generate_column_annotations_variables(variables_dict, column_annotations):
     """Generate column annotations based on variables"""
@@ -341,7 +341,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                             field_value = item_dict[cell_value_field]
                             position = position_map[str(field_value)]
                             if core_array[i, position] == 0:
-                                core_array[i, position] = j
+                                core_array[i, position] = j + 1
                         j += 1
                 i += 1
 
