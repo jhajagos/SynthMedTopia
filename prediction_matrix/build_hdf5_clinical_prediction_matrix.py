@@ -349,7 +349,8 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
             hdf5_column_annotation_path = "/" + hdf5_base_path + "/column_annotations/"
 
-            core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end))
+            core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end),
+                                                 compression="gzip")
             core_data_set[...] = core_array
 
             print("\n***************************")
