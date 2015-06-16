@@ -17,18 +17,21 @@ __author__ = 'jhajagos'
         Here the null model assumes that a diagnosis on any given date during the period.
         The number of encounters is
 
-    You must run get_and_format_ccs_code_mappings.py first
+    You must run "get_and_format_ccs_code_mappings.py" first
+
+    This synthetic while being unrealistic will be used to build querie son the the
 
 """
 
 import numpy as np
 import csv
+import datetime as dt
 import os
 
 DIMENSION_GENDER = ["M", "F"]
 DIMENSION_GENDER_DICT = {"M": "Male", "F": "Female"}
-DIMENSION_ONE_NAME = "Gender"
-DIMENSION_TWO_NAME = "Age"
+DIMENSION_ONE_NAME = "gender"
+DIMENSION_TWO_NAME = "age"
 DIMENSION_AGE = range(86)
 DIMENSION_AGE_DICT = {}
 for age in DIMENSION_AGE:
@@ -72,7 +75,9 @@ def define_number_map(code_dict):
     return forward_map_dict, reverse_map_dict
 
 
-def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_number_of_dx_per_encounter):
+def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_number_of_dx_per_encounter, start_date='2012-01-01'):
+
+    year, month, day = tuple([int(x) for x in start_date.split("-")])
 
     dimension_gender, dimension_age = load_dimensions()
 
@@ -92,7 +97,7 @@ def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_num
     patient_encounter_counts = np.random.poisson(mean_number_of_encounters, number_of_patients)
 
 
-    csv_header = ["patient_id", "encounter_id", "sequence_id", "encounter_day", CODE_NAME, CODE_NAME + "_description", DIMENSION_ONE_NAME, DIMENSION_TWO_NAME]
+    csv_header = ["patient_id", "encounter_id", "sequence_id", "encounter_day", CODE_NAME, CODE_NAME + "_description", DIMENSION_ONE_NAME, DIMENSION_TWO_NAME, "date_of_encounter_text"]
     print(csv_header)
 
     encounter_counter = 1
@@ -102,9 +107,9 @@ def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_num
         for i in range(number_of_patients):
             patient_number_of_encounters = patient_encounter_counts[i]
             patient_number_of_encounter_per_dx = np.random.poisson(mean_number_of_dx_per_encounter, patient_number_of_encounters)
-            date_of_visits = np.random.random_integers(1, number_of_days, patient_number_of_encounters)
+            day_of_visits = np.random.random_integers(1, number_of_days, patient_number_of_encounters)
             birth_date = birth_dates[i]
-            date_of_visits.sort()
+            day_of_visits.sort()
 
             patient_age_at_time_zero = patient_age[i]
 
@@ -113,10 +118,12 @@ def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_num
             for j in range(patient_number_of_encounters):
 
                 sequence_id = 0
-                date_of_visit = date_of_visits[j]
+                day_of_encounter = day_of_visits[j]
+                date_of_encounter = convert_date_with_add_to_odbc(year, month, day, int(day_of_encounter))
 
-                years_since_start = date_of_visit // 365
-                if birth_date <= date_of_visit:
+
+                years_since_start = day_of_encounter // 365
+                if birth_date <= day_of_encounter:
                     birthday_bonus = 1
                 else:
                     birthday_bonus = 0
@@ -130,15 +137,16 @@ def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_num
                     ccs_code = reverse_map_dict[ccs]
                     ccs_code_description = code_dict[ccs_code]
 
-                    row_to_write = [i, encounter_counter, sequence_id, date_of_visit, ccs_code, ccs_code_description, patient_gender_code, age_at_visit]
+                    row_to_write = [i, encounter_counter, sequence_id, day_of_encounter, ccs_code, ccs_code_description, patient_gender_code, age_at_visit, date_of_encounter]
                     cw.writerow(row_to_write)
                     sequence_id += 1
 
                 encounter_counter += 1
 
 
-
+def convert_date_with_add_to_odbc(year, month, day, days_to_add):
+    return dt.datetime.strftime(dt.date(year, month, day) + dt.timedelta(days=days_to_add), "%Y-%m-%d")
 
 
 if __name__ == "__main__":
-    main(365, 1000, 10, 1)
+    main(365, 1000, 10, 1,'2012-01-01')

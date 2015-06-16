@@ -1,0 +1,13 @@
+{
+    "dimensional_fields":
+        ["age", "gender"],
+    "table_name": "synthetic_diagnosis_data",
+    "code_field_name": "ccs_diagnosis",
+    "code_field_description": "ccs_diagnosis_description",
+    "entity_name": "patient",
+    "entity_id": "patient_id",
+    "transaction_name": "encounter",
+    "transaction_id": "encounter_id",
+    "time_units": "days",
+    "time_window": 365
+}
