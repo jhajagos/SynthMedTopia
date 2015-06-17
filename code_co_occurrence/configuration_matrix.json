@@ -1,5 +1,5 @@
 {
-    "dimensional_fields":
+    "dimension_fields":
         ["age", "gender"],
     "table_name": "synthetic_diagnosis_data",
     "code_field_name": "ccs_diagnosis",
@@ -9,5 +9,6 @@
     "transaction_name": "encounter",
     "transaction_id": "encounter_id",
     "time_units": "days",
-    "time_window": 365
+    "time_window": 365,
+    "hdf5_file_name": "synthetic_diagnosis_data.hdf5"
 }

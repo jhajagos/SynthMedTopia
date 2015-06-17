@@ -69,9 +69,7 @@ def define_number_map(code_dict):
 
         forward_map_dict[code_key] = i
         reverse_map_dict[i] = code_key
-
         i += 1
-
     return forward_map_dict, reverse_map_dict
 
 
@@ -96,7 +94,6 @@ def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_num
 
     patient_encounter_counts = np.random.poisson(mean_number_of_encounters, number_of_patients)
 
-
     csv_header = ["patient_id", "encounter_id", "sequence_id", "encounter_day", CODE_NAME, CODE_NAME + "_description", DIMENSION_ONE_NAME, DIMENSION_TWO_NAME, "date_of_encounter_text"]
     print(csv_header)
 
@@ -120,7 +117,6 @@ def main(number_of_days, number_of_patients, mean_number_of_encounters, mean_num
                 sequence_id = 0
                 day_of_encounter = day_of_visits[j]
                 date_of_encounter = convert_date_with_add_to_odbc(year, month, day, int(day_of_encounter))
-
 
                 years_since_start = day_of_encounter // 365
                 if birth_date <= day_of_encounter:
