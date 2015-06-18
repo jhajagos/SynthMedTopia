@@ -360,7 +360,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
             print(core_array)
 
             column_header_path = "/" + hdf5_base_path + "/column_header/"
-            column_header_set = hdf5p.create_dataset(column_header_path, shape=(3,), dtype="S16")
+            column_header_set = hdf5p.create_dataset(column_header_path, shape=(3,), dtype="S32")
             column_header_set[...] = np.array(["field_name", "value", "description"])
             print("\nAnnotations:")
             print(np.transpose(column_header_set[...]))

@@ -25,15 +25,108 @@ from generate_null_model_data import define_number_map
     /overall/
     /overall/co_occur_matrix/ - estimate a symmetric matrix - DX can occur in any order
     /overall/co_occur_temporal_ordering_matrix/
-    /overall/co_occur_same_day_matrix - estimate a symmetric matrix/
-    /overall/annotations/
+    /overall/co_occur_same_day_matrix/ - estimate a symmetric matrix/
+    /overall/co_occur_not_same_day_matrix/
+    /overall/annotations/row
+    /overall/annotations/column
 
-    attributes
-        n
-        lag
-        method
+    attributes:
+        n_entities
+        n_entity_name
+        n_records
+        n_transactions
+        n_transaction_name
+
+        lag +-
 
 """
+
+
+def generate_co_occurrence_matrices(config, h5p, connection, path, forward_code_map_dict, window=180, dimension=None,
+                                    dimension_values_dict=None):
+    """
+    :param config:
+    :param h5p:
+    :param connection:
+    :param window:
+    :param dimension:
+    :param dimension_values_dict:
+    :return:
+    """
+
+    # Estimate number of entities
+
+    entity_id = config["entity_id"]
+    table_name = config["table_name"]
+    transaction_id = config["transaction_id"]
+
+    query_base_count = 'select count(distinct %s) as n_entities, count(distinct %s), count(*) as n_records' % (entity_id, transaction_id)
+    query_count = query_base_count + ' from %s ' % table_name
+    condition_clause = ""
+    if dimension is not None or dimension_values_dict is not None:
+        condition_clause += " where "
+
+    if dimension is not None:
+        condition_clause += '%s = ?'
+
+    if dimension_values_dict is not None:
+        if condition_clause != " where ":
+            condition_clause += " and "
+        dimension_values = []
+        for key in dimension_values_dict:
+            dimension_values += dimension_values_dict[key]
+            condition_clause += "%s = ?" % key
+
+    query_count += condition_clause
+    n_entities, n_transactions, n_records = list(connection.execute(query_count))[0]
+
+    # Diagonal - entities of code class
+    code_field_name = config["code_field_name"]
+    query_group_count = query_base_count + ', %s as code' % code_field_name
+    query_group_count += " from %s " % table_name
+    query_group_count += condition_clause
+    query_group_count += " group by %s" % code_field_name
+
+    group_counts = list(connection.execute(query_group_count))
+
+    n_codes = len(forward_code_map_dict)
+    overall_co = np.zeros(shape=(n_codes, n_codes),dtype='uint32')
+
+    for group_count in group_counts:
+        position_i = forward_code_map_dict[group_count["code"]]
+        overall_co[position_i, position_i] = group_count["n_entities"]
+
+    #print(group_counts)
+
+    # Overall connections
+    core_overall_base = """select dd1.%s as code1, dd2.%s as code2, count(distinct dd1.%s) as n_entities
+ from %s dd1 join %s dd2
+  on (dd1.%s = dd2.%s and dd1.%s != dd2.%s)
+  group by dd1.%s, dd2.%s""" % \
+                        (code_field_name, code_field_name, entity_id, table_name, table_name, entity_id, entity_id,
+                         code_field_name, code_field_name, code_field_name, code_field_name)
+
+    result_cores = connection.execute(core_overall_base)
+
+    for result_core in result_cores:
+        i = forward_code_map_dict[result_core[0]]
+        j = forward_code_map_dict[result_core[1]]
+        overall_co[i,j] = result_core[2]
+
+
+
+    core_array_ds = h5p.create_dataset(path + "co_occur/", shape=(n_codes, n_codes), dtype="uint32")
+    core_array_ds[...] = overall_co
+
+
+
+
+
+    # Lower Quadrant - code 1 occurs before code 2
+
+    # Upper Quadrant - code 2 occurs after code 1
+
+    # Every matrix is the same size
 
 
 def main(config_file_name="./configuration_matrix.json"):
@@ -115,19 +208,32 @@ def main(config_file_name="./configuration_matrix.json"):
         dim_values_ds[...] = np.array(dimension_str_values[i])
         i += 1
 
+    # Store row and column annotations
+
+    max_field_size = 0
+    for code,code_desc in code_list:
+        if len(code) > max_field_size:
+            max_field_size = len(code)
+
+        if len(code_desc) > max_field_size:
+            max_field_size = len(code_desc)
+
+
+    row_annot_d = hf5.create_dataset('/overall/annotations/row/', shape=(len(code_list), 2), dtype="S" + str(max_field_size))
+    col_annot_d = hf5.create_dataset('/overall/annotations/column/', shape=(2, len(code_list)), dtype="S" + str(max_field_size))
+
     # Overall
 
-    # Estimate number of entities
+    row_annot_array = np.array(code_list, dtype="S" + str(max_field_size))
+    row_annot_d[...] = row_annot_array
 
-    # Diagonal - entities of code class
-
-    # Lower Quadrant - code 1 occurs before code 2
-
-    # Upper Quadrant - code 2 occurs after code 1
-
-    # Every matrix is the same size
+    col_annot_array = row_annot_array.transpose()
+    col_annot_d[...] = col_annot_array
 
     # Dimensions Overall
+    entity_id = config["entity_id"]
+    generate_co_occurrence_matrices(config, hf5, engine, "/overall/", code_forward_dict)
+
 
     # Cross Dimensions
 
