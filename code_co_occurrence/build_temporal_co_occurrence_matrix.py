@@ -69,11 +69,11 @@ def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_ma
         dimension_values = []
         for key in dimension_values_dict:
             dimension_values += dimension_values_dict[key]
-            condition_clause1 = ""
+            #condition_clause1 = ""
             condition_clause1 += " and dd1.%s = :%s " % (key, key)
 
-            condition_clause2 = ""
-            condition_clause2 += " and dd1.%s = :%s " % (key, key)
+            #condition_clause2 = ""
+            condition_clause2 += " and dd2.%s = :%s " % (key, key)
 
         condition_clause1 = condition_clause1[4:]
         condition_clause1 = " where " + condition_clause1
@@ -126,7 +126,7 @@ def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_ma
     core_array_ds.attrs["n_records"] = n_records
 
 
-def main(config_file_name="./configuration_matrix.json", if_cross=False):
+def main(config_file_name="./configuration_matrix.json", if_cross=True):
     config = read_configuration(config_file_name)
 
     # Connect to a database
@@ -230,7 +230,7 @@ def main(config_file_name="./configuration_matrix.json", if_cross=False):
 
     # Dimensions Overall
     entity_id = config["entity_id"]
-    generate_co_occurrence_matrix(config, hf5, engine, "/overall/", code_forward_dict, date_order=None,
+    generate_co_occurrence_matrix(config, hf5, engine, "/overall/", code_forward_dict, additional_join_criteria=None,
                                         dimension_values_dict={})
 
     # Single Dimension
@@ -239,7 +239,7 @@ def main(config_file_name="./configuration_matrix.json", if_cross=False):
         for dim_val in dimension_str_values[i]:
             path = "/dimension/" + dimension_field + "/" + dim_val + "/"
             print(path)
-            generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, date_order=None,
+            generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, additional_join_criteria=None,
                                         dimension_values_dict={dimension_field: dim_val})
         i+=1
 
@@ -254,7 +254,7 @@ def main(config_file_name="./configuration_matrix.json", if_cross=False):
             for dim_val2 in dimension_str_values[1]:
                 path = "/dimension/cross/" + dim1 + "/" + dim_val1 + "/" + dim2 + "/" + dim_val2 + "/"
                 print(path)
-                generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, date_order=None,
+                generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, additional_join_criteria=None,
                                             dimension_values_dict={dim1: dim_val1, dim2: dim_val2})
 
 
