@@ -43,7 +43,7 @@ from generate_null_model_data import define_number_map
 """
 
 
-def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_map_dict, date_order=None,
+def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_map_dict, additional_join_criteria=None,
                                     dimension_values_dict=None):
     """
     :param config:
@@ -60,29 +60,33 @@ def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_ma
     entity_id = config["entity_id"]
     table_name = config["table_name"]
     transaction_id = config["transaction_id"]
-
+    schema = config["schema"]
     query_base_count = 'select count(distinct %s) as n_entities, count(distinct %s), count(*) as n_records' % (entity_id, transaction_id)
-    query_count = query_base_count + ' from %s dd1 ' % table_name
-    condition_clause = ""
-
+    query_count = query_base_count + ' from %s.%s dd1 ' % (schema, table_name)
+    condition_clause1 = ""
+    condition_clause2 = ""
     if len(dimension_values_dict) > 0:
         dimension_values = []
         for key in dimension_values_dict:
             dimension_values += dimension_values_dict[key]
-            condition_clause += " and dd1.%s = :%s " % (key, key)
+            condition_clause1 = ""
+            condition_clause1 += " and dd1.%s = :%s " % (key, key)
 
-        condition_clause = condition_clause[4:]
-        condition_clause = " where " + condition_clause
+            condition_clause2 = ""
+            condition_clause2 += " and dd1.%s = :%s " % (key, key)
 
-    query_count += condition_clause
+        condition_clause1 = condition_clause1[4:]
+        condition_clause1 = " where " + condition_clause1
+
+    query_count += condition_clause1
 
     n_entities, n_transactions, n_records = list(connection.execute(sa.sql.text(query_count), **dimension_values_dict))[0]
 
     # Diagonal - entities of code class
     code_field_name = config["code_field_name"]
     query_group_count = query_base_count + ', %s as code' % code_field_name
-    query_group_count += " from %s dd1" % table_name
-    query_group_count += condition_clause
+    query_group_count += " from %s.%s dd1" % (schema, table_name)
+    query_group_count += condition_clause1
     query_group_count += " group by %s" % code_field_name
 
     group_counts = list(connection.execute(sa.sql.text(query_group_count), **dimension_values_dict))
@@ -95,25 +99,25 @@ def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_ma
         overall_co[position_i, position_i] = group_count["n_entities"]
 
     date_field = config["date_field"]
-    if date_order is None:
+    if additional_join_criteria is None:
         additional_join_condition = ""
     else:
-        additional_join_condition = "and dd1.%s %s dd2.%s" % (date_field, date_order, date_field)
+        additional_join_condition = additional_join_criteria
 
 # Overall connections
     core_overall_base = """select dd1.%s as code1, dd2.%s as code2, count(distinct dd1.%s) as n_entities
- from %s dd1 join %s dd2
-  on (dd1.%s = dd2.%s and dd1.%s != dd2.%s %s) %s
+ from %s.%s dd1 join %s.%s dd2
+  on (dd1.%s = dd2.%s and dd1.%s != dd2.%s %s) %s %s
   group by dd1.%s, dd2.%s""" % \
-                        (code_field_name, code_field_name, entity_id, table_name, table_name, entity_id, entity_id,
-                         code_field_name, code_field_name, additional_join_condition, condition_clause, code_field_name, code_field_name)
+                        (code_field_name, code_field_name, entity_id, schema, table_name, schema, table_name, entity_id, entity_id,
+                         code_field_name, code_field_name, additional_join_condition, condition_clause1, condition_clause2, code_field_name, code_field_name)
     print(core_overall_base)
     result_cores = connection.execute(sa.sql.text(core_overall_base), **dimension_values_dict)
 
     for result_core in result_cores:
         i = forward_code_map_dict[result_core[0]]
         j = forward_code_map_dict[result_core[1]]
-        overall_co[i,j] = result_core[2]
+        overall_co[i, j] = result_core[2]
 
     core_array_ds = h5p.create_dataset(path + "co_occur/", shape=(n_codes, n_codes), dtype="uint32", compression="gzip")
     core_array_ds[...] = overall_co
@@ -122,14 +126,14 @@ def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_ma
     core_array_ds.attrs["n_records"] = n_records
 
 
-def main(config_file_name="./configuration_matrix.json"):
+def main(config_file_name="./configuration_matrix.json", if_cross=False):
     config = read_configuration(config_file_name)
 
     # Connect to a database
     engine = sa.create_engine(config_db.connection_url)
-
+    schema = config["schema"]
     # Get database metadata
-    metadata = sa.MetaData(engine, reflect=True)
+    metadata = sa.MetaData(engine, reflect=True, schema=schema)
 
     # Delete HDF5 file if it exists
 
@@ -145,7 +149,7 @@ def main(config_file_name="./configuration_matrix.json"):
 
     table_name = config["table_name"]
 
-    table_obj = metadata.tables[table_name]
+    table_obj = metadata.tables[schema + '.' + table_name]
 
     code_field_name = config["code_field_name"]
     code_field_description = config["code_field_description"]
@@ -205,11 +209,12 @@ def main(config_file_name="./configuration_matrix.json"):
 
     max_field_size = 0
     for code,code_desc in code_list:
-        if len(code) > max_field_size:
-            max_field_size = len(code)
+        if code is not None:
+            if len(code) > max_field_size:
+                max_field_size = len(code)
 
-        if len(code_desc) > max_field_size:
-            max_field_size = len(code_desc)
+            if len(code_desc) > max_field_size:
+                max_field_size = len(code_desc)
 
 
     row_annot_d = hf5.create_dataset('/overall/annotations/row/', shape=(len(code_list), 2), dtype="S" + str(max_field_size))
@@ -229,7 +234,6 @@ def main(config_file_name="./configuration_matrix.json"):
                                         dimension_values_dict={})
 
     # Single Dimension
-
     i = 0
     for dimension_field in dimension_fields:
         for dim_val in dimension_str_values[i]:
@@ -239,19 +243,19 @@ def main(config_file_name="./configuration_matrix.json"):
                                         dimension_values_dict={dimension_field: dim_val})
         i+=1
 
+    if if_cross:
+        # Cross Dimensions
+        # At this point support for only two dimensions
 
-    # Cross Dimensions
-    # At this point support for only two dimensions
+        dim1 =  dimension_fields[0]
+        dim2 = dimension_fields[1]
 
-    dim1 =  dimension_fields[0]
-    dim2 = dimension_fields[1]
-
-    for dim_val1 in dimension_str_values[0]:
-        for dim_val2 in dimension_str_values[1]:
-            path = "/dimension/cross/" + dim1 + "/" + dim_val1 + "/" + dim2 + "/" + dim_val2 + "/"
-            print(path)
-            generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, date_order=None,
-                                        dimension_values_dict={dim1: dim_val1, dim2: dim_val2})
+        for dim_val1 in dimension_str_values[0]:
+            for dim_val2 in dimension_str_values[1]:
+                path = "/dimension/cross/" + dim1 + "/" + dim_val1 + "/" + dim2 + "/" + dim_val2 + "/"
+                print(path)
+                generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, date_order=None,
+                                            dimension_values_dict={dim1: dim_val1, dim2: dim_val2})
 
 
 def read_configuration(json_file_name):

@@ -9,7 +9,8 @@
     "transaction_name": "encounter",
     "transaction_id": "encounter_id",
     "time_units": "days",
-    "time_window": 365,
+    "time_window": 180,
     "hdf5_file_name": "synthetic_diagnosis_data.hdf5",
-    "date_field": "date_of_encounter"
+    "date_field": "date_of_encounter",
+    "schema": "public"
 }
