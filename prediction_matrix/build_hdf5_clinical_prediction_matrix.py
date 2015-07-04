@@ -94,6 +94,11 @@ def expand_template_dict(data_dict, template_list_dict):
     for template_dict in template_list_dict:
         template_type = template_dict["type"]
         path = template_dict["path"]
+        if "export_path" in template_dict:
+            export_path = template_dict["export_path"]
+        else:
+            export_path = template_dict["path"]
+
         if template_type == "classes_templates":
             entry_classes = []
             for data_key in data_dict:
@@ -105,13 +110,14 @@ def expand_template_dict(data_dict, template_list_dict):
                             entry_classes += [key]
             template_class = template_dict["class_template"]
             entry_classes_dict = []
+            entry_classes.sort()
             for entry in entry_classes:
                 new_template_dict = template_class.copy()
                 new_template_dict["name"] = entry
                 entry_classes_dict += [new_template_dict]
 
             new_type = template_dict["class_type"]
-            new_template_dict = {"path": path, "type": new_type, new_type: entry_classes_dict}
+            new_template_dict = {"path": path, "type": new_type, new_type: entry_classes_dict, "export_path": export_path}
 
             new_templates += [new_template_dict]
 
@@ -247,7 +253,6 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
         path = data_translate_dict["path"]
 
         hdf5_base_path = "/".join(export_path)
-        hdf5_core_array_path = "/" + hdf5_base_path + "/core_array/"
 
         if template_type == "variables":
             offset_end = data_translate_dict["variables"][-1]["offset_end"]
@@ -347,6 +352,14 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
         if template_type in ("variables", "categorical_list"):
 
+            # if "export_path" in data_translate_dict:
+            #     export_path = data_translate_dict["export_path"]
+            # else:
+            #     export_path = data_translate_dict["path"]
+            #
+            # hdf5_base_path = "/".join(export_path)
+
+            hdf5_core_array_path = "/" + hdf5_base_path + "/core_array/"
             hdf5_column_annotation_path = "/" + hdf5_base_path + "/column_annotations/"
 
             core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end),
