@@ -12,5 +12,7 @@
     "time_window": 180,
     "hdf5_file_name": "synthetic_diagnosis_data.hdf5",
     "date_field": "date_of_encounter",
+    "day_field_name": "encounter_day",
+    "invariant_entity_attributes": ["gender"],
     "schema": "public"
 }

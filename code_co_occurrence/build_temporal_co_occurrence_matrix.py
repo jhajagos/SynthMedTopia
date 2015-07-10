@@ -43,20 +43,119 @@ from generate_null_model_data import define_number_map
 """
 
 
+def build_code_min_max_matrices(config, h5p, connection, path, forward_code_map_dict, invariant_entity_attributes):
+    entity_id = config["entity_id"]
+    table_name = config["table_name"]
+    transaction_id = config["transaction_id"]
+    schema = config["schema"]
+    day_field_name = config["day_field_name"]
+    code_field_name = config["code_field_name"]
+
+    query_entity_id = """select distinct %s as entity_id from %s.%s order by %s""" % (entity_id, schema, table_name, entity_id)
+    print(query_entity_id)
+    r_e = connection.execute(query_entity_id)
+    forward_entity_map_dict = {}
+    i = 0
+    entity_list = []
+    max_length_entity = 0
+    for row in r_e:
+        entity_id_value = row["entity_id"]
+        entity_id_value_len = len(str(entity_id_value))
+        if entity_id_value_len > max_length_entity:
+            max_length_entity = entity_id_value_len
+
+        forward_entity_map_dict[entity_id_value] = i
+        entity_list += [entity_id_value]
+        i += 1
+
+    entity_array_dtype = "S" + str(max_length_entity)
+    entity_array = np.array(entity_list, dtype=entity_array_dtype)
+
+    ds_entity = h5p.create_dataset(path + "entity_id/", shape=entity_array.shape, dtype=entity_array_dtype, compression="gzip")
+    ds_entity.attrs["entity_name"] = entity_id
+    ds_entity[...] = entity_array
+
+    invariant_list_of_list = []
+    max_invariant_length = 0
+    for invariant in invariant_entity_attributes:
+        query_invariant = "select distinct %s as entity_id, %s as invariant from %s.%s order by %s" % (entity_id, invariant, schema, table_name, entity_id)
+
+        invariant_list = []
+        print(query_invariant)
+        r_is = connection.execute(query_invariant)
+        for row in r_is:
+            invariant_attribute = row["invariant"]
+            invariant_measure_len = len(invariant_attribute)
+            if invariant_measure_len > max_invariant_length:
+                max_invariant_length = invariant_measure_len
+
+            invariant_list += [invariant_attribute]
+
+        if len(invariant_list) == len(entity_list):
+            invariant_list_of_list += [invariant_list]
+        else:
+            print("Attribute %s varies per entity")
+
+    invariant_array_dtype = "S" + str(max_invariant_length)
+    invariant_array = np.array(invariant_list_of_list, invariant_array_dtype)
+    ia_entity_ds = h5p.create_dataset(path + "invariant_array/", shape=invariant_array.shape, dtype=invariant_array_dtype, compression="gzip")
+    ia_entity_ds[...] = invariant_array
+
+    ia_entity_attr_ds = h5p.create_dataset(path + "invariant_entity_attributes/", shape=(1,len(invariant_entity_attributes)), dtype="S32")
+    ia_entity_attr_ds[...] = np.array([invariant_entity_attributes], dtype="S32")
+
+
+    query_inner = """select %s as entity_id, %s as transaction_day, %s as transaction_id,
+        %s as code
+      from %s.%s sdd
+  """ % (entity_id, day_field_name, transaction_id, code_field_name, schema, table_name)
+
+    query_outer = """
+    select entity_id, code, count(*) as code_count, count(distinct transaction_id) as transaction_count,
+  min(t.transaction_day) as min_transaction_day, max(t.transaction_day) as max_transaction_day
+  from
+    (%s) t
+  group by entity_id, code
+  order by entity_id, code
+    """ % query_inner
+
+    res = connection.execute(query_outer)
+
+    max_day_array = np.zeros(shape=(len(forward_entity_map_dict), len(forward_code_map_dict)), dtype="uint16")
+    min_day_array = np.zeros(shape=(len(forward_entity_map_dict), len(forward_code_map_dict)), dtype="uint16")
+    count_array = np.zeros(shape=(len(forward_entity_map_dict), len(forward_code_map_dict)), dtype="uint16")
+    for r in res:
+        code = r["code"]
+        code_position = forward_code_map_dict[code]
+        entity_id_value = r["entity_id"]
+        entity_id_position = forward_entity_map_dict[entity_id_value]
+        code_count = r["code_count"]
+        max_transaction_day = r["max_transaction_day"]
+        min_transaction_day = r["min_transaction_day"]
+
+        max_day_array[entity_id_position][code_position] = max_transaction_day
+        min_day_array[entity_id_position][code_position] = min_transaction_day
+        count_array[entity_id_position][code_position] = code_count
+
+    max_day_array_ds = h5p.create_dataset(path + "max_day_array/", shape=max_day_array.shape, dtype=max_day_array.dtype, compression="gzip")
+    max_day_array_ds[...] = max_day_array
+
+    min_day_array_ds = h5p.create_dataset(path + "min_day_array/", shape=min_day_array.shape, dtype=min_day_array.dtype, compression="gzip")
+    min_day_array_ds[...] = min_day_array
+
+    count_array_ds = h5p.create_dataset(path + "count_array/", shape=count_array.shape, dtype=count_array.dtype, compression="gzip")
+    count_array_ds[...] = count_array
+
+
+    print(min_day_array)
+    print(max_day_array)
+    print(count_array)
+
+
 def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_map_dict, additional_join_criteria=None,
                                     dimension_values_dict=None):
-    """
-    :param config:
-    :param h5p:
-    :param connection:
-    :param window:
-    :param dimension:
-    :param dimension_values_dict:
-    :return:
-    """
 
     # Estimate number of entities
-
     entity_id = config["entity_id"]
     table_name = config["table_name"]
     transaction_id = config["transaction_id"]
@@ -90,7 +189,6 @@ def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_ma
     query_group_count += " group by %s" % code_field_name
 
     group_counts = list(connection.execute(sa.sql.text(query_group_count), **dimension_values_dict))
-
     n_codes = len(forward_code_map_dict)
     overall_co = np.zeros(shape=(n_codes, n_codes), dtype='uint32')
 
@@ -126,7 +224,7 @@ def generate_co_occurrence_matrix(config, h5p, connection, path, forward_code_ma
     core_array_ds.attrs["n_records"] = n_records
 
 
-def main(config_file_name="./configuration_matrix.json", if_cross=True):
+def main(config_file_name="./configuration_matrix.json", if_cross=True, build_temporal_entity_code=True):
     config = read_configuration(config_file_name)
 
     # Connect to a database
@@ -136,7 +234,6 @@ def main(config_file_name="./configuration_matrix.json", if_cross=True):
     metadata = sa.MetaData(engine, reflect=True, schema=schema)
 
     # Delete HDF5 file if it exists
-
     hdf5_file_name = config["hdf5_file_name"]
 
     if os.path.exists(hdf5_file_name):
@@ -146,7 +243,6 @@ def main(config_file_name="./configuration_matrix.json", if_cross=True):
     hf5 = h5py.File(hdf5_file_name, "w")
 
     # Get Codes and Code Labels
-
     table_name = config["table_name"]
 
     table_obj = metadata.tables[schema + '.' + table_name]
@@ -221,7 +317,6 @@ def main(config_file_name="./configuration_matrix.json", if_cross=True):
     col_annot_d = hf5.create_dataset('/overall/annotations/column/', shape=(2, len(code_list)), dtype="S" + str(max_field_size))
 
     # Overall
-
     row_annot_array = np.array(code_list, dtype="S" + str(max_field_size))
     row_annot_d[...] = row_annot_array
 
@@ -230,6 +325,12 @@ def main(config_file_name="./configuration_matrix.json", if_cross=True):
 
     # Dimensions Overall
     entity_id = config["entity_id"]
+
+    if build_temporal_entity_code:
+
+        build_code_min_max_matrices(config, hf5, engine, "/temporal_entity_code/", code_forward_dict, invariant_entity_attributes=config["invariant_entity_attributes"])
+
+
     generate_co_occurrence_matrix(config, hf5, engine, "/overall/", code_forward_dict, additional_join_criteria=None,
                                         dimension_values_dict={})
 
@@ -241,7 +342,7 @@ def main(config_file_name="./configuration_matrix.json", if_cross=True):
             print(path)
             generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, additional_join_criteria=None,
                                         dimension_values_dict={dimension_field: dim_val})
-        i+=1
+        i += 1
 
     if if_cross:
         # Cross Dimensions
@@ -256,7 +357,6 @@ def main(config_file_name="./configuration_matrix.json", if_cross=True):
                 print(path)
                 generate_co_occurrence_matrix(config, hf5, engine, path, code_forward_dict, additional_join_criteria=None,
                                             dimension_values_dict={dim1: dim_val1, dim2: dim_val2})
-
 
 def read_configuration(json_file_name):
     with open(json_file_name, "r") as f:
