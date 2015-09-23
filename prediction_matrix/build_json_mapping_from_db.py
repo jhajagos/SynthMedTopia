@@ -1,7 +1,6 @@
 __author__ = 'jhajagos'
 
 import sqlalchemy as sa
-
 import json
 import os
 import datetime
@@ -11,6 +10,7 @@ import sys
 
 def datestamp():
     return time.strftime("%Y%m%d", time.gmtime())
+
 
 def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest, field_class_name,
                                                          transaction_id_field="transaction_id"):
@@ -29,11 +29,11 @@ def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest,
 
     The results in the table need to be sorted in a logical way
 
-    :param rs:
-    :param fields_of_interest:
-    :param field_class_name:
-    :param transaction_id_field:
-    :return:
+    :param rs: Query Result iterator
+    :param fields_of_interest: Fields that want to be included in the file
+    :param field_class_name: Field that we will use to split the results into separate classes
+    :param transaction_id_field: The name of the ID field
+    :return: None
     """
     l = 0
 
@@ -104,6 +104,13 @@ def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest,
 
 
 def build_dict_based_on_transaction_id_query(rs, fields_of_interest, transaction_id_field="transaction_id"):
+    """
+
+    :param rs:
+    :param fields_of_interest:
+    :param transaction_id_field:
+    :return:
+    """
 
     transaction_id_dict = {}
 
@@ -152,12 +159,21 @@ def execute_and_print(connection, query):
     return rs
 
 
-
-def main(configuration_json_name="sbm_inpatient_json_config.json"):
-
+def main_json(configuration_json_name="sbm_inpatient_json_config.json"):
     with open(configuration_json_name, "r") as f:
         configuration = json.load(f)
 
+        main(configuration)
+
+
+def main(configuration):
+    """
+
+    :param configuration:
+    :return: None
+
+    Writes out a file
+    """
     main_config = configuration["main_transactions"]
     connection_string=main_config["connection_string"]
     data_directory = main_config["data_directory"]
@@ -226,10 +242,10 @@ def main(configuration_json_name="sbm_inpatient_json_config.json"):
         execute_and_print(connection, index_query)
 
     print("Extracting features")
-    query_wrapper = '''select zzz.* from (%s) zzz join %s yyy on zzz.transaction_id = yyy.transaction_id''' #TODO: Write out transaction id
+    query_wrapper = 'select zzz.* from (%s) zzz join %s yyy on zzz."' + transaction_id_field + '"' +' = yyy.transaction_id'
 
     mappings = configuration["mappings"]
-    results_dict = {} #TODO Make this an interface
+    results_dict = {}  # TODO: Make this an interface so that we do not have use in memory storage
 
     for transaction_id in transactions_of_interest:
         transaction_dict = {}
@@ -263,7 +279,6 @@ def main(configuration_json_name="sbm_inpatient_json_config.json"):
             mapping_result_dict = build_dict_based_on_transaction_id_multi_class_query(rs, mapping["fields_to_include"], mapping["group_by_field"])
 
         for transaction_id in mapping_result_dict:
-
             result_dict_to_align = mapping_result_dict[transaction_id]
 
             if mapping["type"] == "one-to-one":
@@ -284,4 +299,4 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print("Usage: python build_json_mapping_from_db.py inpatient_config.json")
     else:
-        main(sys.argv[1])
+        main_json(sys.argv[1])
