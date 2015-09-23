@@ -262,7 +262,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
         if template_type in ("variables", "categorical_list"):
             core_array = np.zeros(shape=(data_items_count, offset_end))
-            column_annotations = np.zeros(shape=(3, offset_end), dtype="S64")
+            column_annotations = np.zeros(shape=(3, offset_end), dtype="S128")
 
         if template_type == "variables":
 
@@ -287,7 +287,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                     i = 0
 
                     if "process" in variable_dict:
-                        process = variable_dict["process"]
+                        process  = variable_dict["process"]
                         variable_name = variable_dict["name"]
 
                     else:
@@ -389,7 +389,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
             print("***************************")
 
-            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(3, offset_end), dtype="S64")
+            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(3, offset_end), dtype="S128")
             column_data_set[...] = column_annotations
 
 
