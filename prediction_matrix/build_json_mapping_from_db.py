@@ -285,12 +285,14 @@ def main(configuration):
                  result_dict_to_align = mapping_result_dict[transaction_id][0]
             else:
                  result_dict_to_align = mapping_result_dict[transaction_id]
-            result_dict = results_dict[transaction_id]
-            current_dict = result_dict
-            for path in mapping["path"]:
-                current_dict = current_dict[path]
+            # Align to other transactions
+            if transaction_id in results_dict:
+                result_dict = results_dict[transaction_id]
+                current_dict = result_dict
+                for path in mapping["path"]:
+                    current_dict = current_dict[path]
 
-            current_dict[mapping["name"]] = result_dict_to_align
+                current_dict[mapping["name"]] = result_dict_to_align
 
     with open(os.path.join(data_directory, main_config["base_file_name"] + "_" + datestamp() + ".json"), "w") as fw:
         json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
