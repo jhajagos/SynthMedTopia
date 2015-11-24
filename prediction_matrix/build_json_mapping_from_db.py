@@ -7,6 +7,7 @@ import datetime
 import time
 import sys
 
+from config_db import connection_string
 
 def datestamp():
     return time.strftime("%Y%m%d", time.gmtime())
@@ -163,10 +164,10 @@ def main_json(configuration_json_name="sbm_inpatient_json_config.json"):
     with open(configuration_json_name, "r") as f:
         configuration = json.load(f)
 
-        main(configuration)
+        main(configuration, connection_string)
 
 
-def main(configuration):
+def main(configuration, connection_string=None):
     """
 
     :param configuration:
@@ -175,7 +176,9 @@ def main(configuration):
     Writes out a file
     """
     main_config = configuration["main_transactions"]
-    connection_string=main_config["connection_string"]
+    if connection_string is None:
+        connection_string=main_config["connection_string"]
+
     data_directory = main_config["data_directory"]
     schema = main_config["schema"]
 
