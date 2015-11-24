@@ -9,6 +9,8 @@ import sys
 
 from config_db import connection_string
 
+
+
 def datestamp():
     return time.strftime("%Y%m%d", time.gmtime())
 
@@ -167,7 +169,7 @@ def main_json(configuration_json_name="sbm_inpatient_json_config.json"):
         main(configuration, connection_string)
 
 
-def main(configuration, connection_string=None):
+def main(configuration, connection_string=None, results_dict_class=None):
     """
 
     :param configuration:
@@ -248,7 +250,10 @@ def main(configuration, connection_string=None):
     query_wrapper = 'select zzz.* from (%s) zzz join %s yyy on zzz."' + transaction_id_field + '"' +' = yyy.transaction_id'
 
     mappings = configuration["mappings"]
-    results_dict = {}  # TODO: Make this an interface so that we do not have use in memory storage
+    if results_dict_class is None:
+        results_dict = {}  # TODO: Make this an interface so that we do not have use in memory storage
+    else:
+        results_dict = results_dict_class
 
     for transaction_id in transactions_of_interest:
         transaction_dict = {}
@@ -262,7 +267,6 @@ def main(configuration, connection_string=None):
 
                 current_dict = current_dict[part]
             current_dict[mapping["name"]] = None
-
         results_dict[transaction_id] = transaction_dict
 
     for mapping in mappings:
@@ -297,8 +301,22 @@ def main(configuration, connection_string=None):
 
                 current_dict[mapping["name"]] = result_dict_to_align
 
-    with open(os.path.join(data_directory, main_config["base_file_name"] + "_" + datestamp() + ".json"), "w") as fw:
-        json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+    #Write out order of keys
+
+    output_key_order_file_name = os.path.join(data_directory, main_config["base_file_name"] + "_" + "key_order_" + datestamp() + ".json")
+    transactions_of_interest_str = [str(x) for x in transactions_of_interest]
+    with open(output_key_order_file_name, "w") as fw:
+        json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
+
+
+    #Write dictionary out
+    if results_dict_class is None:
+
+        output_file_name = os.path.join(data_directory, main_config["base_file_name"] + "_" + datestamp() + ".json")
+        print('Writing "%s"' % output_file_name)
+        with open(output_file_name, "w") as fw:
+            json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
