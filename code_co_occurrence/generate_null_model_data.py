@@ -45,7 +45,9 @@ def get_acs_files():
 def load_dimensions():
     return DIMENSION_GENDER_DICT, DIMENSION_AGE_DICT
 
-def read_codes_into_dict(code_file_name="./data/cleaned_dxlabel_2013.csv", code_field="CCS DIAGNOSIS CATEGORIES", description_field="CCS DIAGNOSIS CATEGORIES LABELS"):
+def read_codes_into_dict(code_file_name="./data/cleaned_dxlabel_2013.csv", code_field="CCS DIAGNOSIS CATEGORIES",
+                         description_field="CCS DIAGNOSIS CATEGORIES LABELS"):
+
     """Read a code file consisting code and description"""
     with open(code_file_name, "r") as f:
         code_dict = {}

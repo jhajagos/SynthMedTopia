@@ -1,0 +1,18 @@
+{
+  "source_db_config": {
+    "connection_string": "sqlite:///test_db.db3",
+    "where_criteria": null,
+    "refresh_transactions_table": 1
+  },
+  "json_file_config": {
+     "base_file_name": "transactions",
+     "data_directory": "./"
+  },
+  "mongo_db_config": {
+    "connection_string": "mongodb://localhost",
+    "database_name": "encounters",
+    "collection_name": "mapped_encounters",
+    "refresh_collection": true
+  },
+  "output_type": "json_file"
+}

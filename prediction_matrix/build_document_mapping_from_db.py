@@ -7,9 +7,14 @@ import datetime
 import time
 import sys
 
-from config_db import connection_string
+"""
+import pymongo
+import ssl
+client = pymongo.MongoClient('bmi-clinical-analytics-p0',ssl=True, ssl_cert_reqs=ssl.CERT_NONE)
 
-
+>>> uri = 'mongodb://example.com/?ssl=true&ssl_cert_reqs=CERT_NONE'
+>>> client = pymongo.MongoClient(uri)
+"""
 
 def datestamp():
     return time.strftime("%Y%m%d", time.gmtime())
@@ -162,14 +167,19 @@ def execute_and_print(connection, query):
     return rs
 
 
-def main_json(configuration_json_name="sbm_inpatient_json_config.json"):
-    with open(configuration_json_name, "r") as f:
-        configuration = json.load(f)
+def main_json(mapping_json_name, run_time_json_name):
+    with open(mapping_json_name, "r") as f:
+        mapping_configuration = json.load(f)
 
-        main(configuration, connection_string)
+    with open(run_time_json_name, "r") as f:
+        runtime_configuration = json.load(f)
+
+    configuration = {"mapping_config": mapping_configuration, "runtime_config": runtime_configuration}
+
+    main(configuration)
 
 
-def main(configuration, connection_string=None, results_dict_class=None):
+def main(configuration, results_dict_class=None):
     """
 
     :param configuration:
@@ -177,11 +187,14 @@ def main(configuration, connection_string=None, results_dict_class=None):
 
     Writes out a file
     """
-    main_config = configuration["main_transactions"]
-    if connection_string is None:
-        connection_string=main_config["connection_string"]
 
-    data_directory = main_config["data_directory"]
+    connection_string = configuration["runtime_config"]["source_db_config"]["connection_string"]
+
+    main_config = configuration["mapping_config"]["main_transactions"]
+    runtime_config = configuration["runtime_config"]
+
+    data_directory = runtime_config["json_file_config"]["data_directory"]
+    base_file_name = runtime_config["json_file_config"]["base_file_name"]
     schema = main_config["schema"]
 
     engine = sa.create_engine(connection_string)
@@ -189,8 +202,11 @@ def main(configuration, connection_string=None, results_dict_class=None):
     connection = engine.connect()
     print("Connected")
 
-    refresh_transactions_table = main_config["refresh_transactions_table"]
-    main_transaction_table = schema + "." + '"' + main_config["table_name"] + '"' #TODO: Add proper escaping
+    refresh_transactions_table = runtime_config["source_db_config"]["refresh_transactions_table"]
+    if schema is not None:
+        main_transaction_table = schema + "." + '"' + main_config["table_name"] + '"' #TODO: Add proper escaping
+    else:
+        main_transaction_table = main_config["table_name"]
 
     main_transaction_query = 'select * from %s' % main_transaction_table
 
@@ -224,7 +240,11 @@ def main(configuration, connection_string=None, results_dict_class=None):
         transactions_of_interest += [transaction_id]
         i += 1
 
-    transactions_of_interest_table = "%s.tmp_transactions_of_interest" % schema
+    if schema is not None:
+        transactions_of_interest_table = "%s.tmp_transactions_of_interest" % schema
+    else:
+        transactions_of_interest_table = "tmp_transactions_of_interest"
+
     drop_table_if_exists = "drop table if exists %s" % transactions_of_interest_table
     create_table_sql = "create table %s" % transactions_of_interest_table
     create_table_sql += " (transaction_id int8)" #TODO: Get transaction id in correct format
@@ -249,7 +269,7 @@ def main(configuration, connection_string=None, results_dict_class=None):
     print("Extracting features")
     query_wrapper = 'select zzz.* from (%s) zzz join %s yyy on zzz."' + transaction_id_field + '"' +' = yyy.transaction_id'
 
-    mappings = configuration["mappings"]
+    mappings = configuration["mapping_config"]["mappings"]
     if results_dict_class is None:
         results_dict = {}  # TODO: Make this an interface so that we do not have use in memory storage
     else:
@@ -270,7 +290,11 @@ def main(configuration, connection_string=None, results_dict_class=None):
         results_dict[transaction_id] = transaction_dict
 
     for mapping in mappings:
-        mapping_table_name = schema + "." + '"%s"' % mapping["table_name"]
+        if schema is not None:
+            mapping_table_name = schema + "." + '"%s"' % mapping["table_name"]
+        else:
+            mapping_table_name = '"%s"' % mapping["table_name"]
+
         mapping_query = "select * from %s" % mapping_table_name
         if "fields_to_order_by" in mapping and mapping["fields_to_order_by"] is not None:
             mapping_query += " order by "
@@ -281,9 +305,9 @@ def main(configuration, connection_string=None, results_dict_class=None):
         rs = execute_and_print(connection, query_wrapper % (mapping_query, transactions_of_interest_table))
 
         if mapping["type"] in ["one-to-one", "one-to-many"]:
-            mapping_result_dict = build_dict_based_on_transaction_id_query(rs, mapping["fields_to_include"])
+            mapping_result_dict = build_dict_based_on_transaction_id_query(rs, mapping["fields_to_include"], transaction_id_field)
         else:
-            mapping_result_dict = build_dict_based_on_transaction_id_multi_class_query(rs, mapping["fields_to_include"], mapping["group_by_field"])
+            mapping_result_dict = build_dict_based_on_transaction_id_multi_class_query(rs, mapping["fields_to_include"], mapping["group_by_field"], transaction_id_field)
 
         for transaction_id in mapping_result_dict:
             result_dict_to_align = mapping_result_dict[transaction_id]
@@ -303,8 +327,9 @@ def main(configuration, connection_string=None, results_dict_class=None):
 
     #Write out order of keys
 
-    output_key_order_file_name = os.path.join(data_directory, main_config["base_file_name"] + "_" + "key_order_" + datestamp() + ".json")
+    output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + "key_order_" + datestamp() + ".json")
     transactions_of_interest_str = [str(x) for x in transactions_of_interest]
+    print('Writing key order: "%s"' % output_key_order_file_name)
     with open(output_key_order_file_name, "w") as fw:
         json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
 
@@ -312,14 +337,14 @@ def main(configuration, connection_string=None, results_dict_class=None):
     #Write dictionary out
     if results_dict_class is None:
 
-        output_file_name = os.path.join(data_directory, main_config["base_file_name"] + "_" + datestamp() + ".json")
-        print('Writing "%s"' % output_file_name)
+        output_file_name = os.path.join(data_directory, base_file_name + "_" + datestamp() + ".json")
+        print('Writing JSON file "%s"' % output_file_name)
         with open(output_file_name, "w") as fw:
             json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print("Usage: python build_json_mapping_from_db.py inpatient_config.json")
+        print("Usage: python build_document_mapping_from_db.py inpatient_config.json runtime_config.json")
     else:
-        main_json(sys.argv[1])
+        main_json(sys.argv[1], sys.argv[2])

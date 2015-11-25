@@ -1,0 +1,18 @@
+{
+  "source_db_config": {
+    "connection_string": "postgresql+psycopg2://user:password@host/db",
+    "where_criteria": "discharge_year = 2011 and representative_admission = 1",
+    "refresh_transactions_table": 1
+  },
+  "json_file_config": {
+     "base_file_name": "sbm_inpatient_t",
+     "data_directory": "E:/predict/"
+  },
+  "mongo_db_config": {
+    "connection_string": "mongodb://example.com/?ssl=true&ssl_cert_reqs=CERT_NONE",
+    "database_name": "encounters",
+    "collection_name": "mapped_names",
+    "refresh_collection": true
+  },
+  "output_type": "json_file"
+}
