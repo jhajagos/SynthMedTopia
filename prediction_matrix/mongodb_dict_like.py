@@ -38,3 +38,14 @@ class DictMappingMongo(object):
     def __len__(self):
         return self.collection.count()
 
+     # def __delitem__(self, key):
+     #    pass#del self.values[key]
+
+    def keys(self):
+        keys_cursor = self.collection.find(None, [self.name_to_use_as_key])
+        return [kc[self.name_to_use_as_key] for kc in keys_cursor]
+
+    def __iter__(self):
+        return iter(self.keys())
+
+

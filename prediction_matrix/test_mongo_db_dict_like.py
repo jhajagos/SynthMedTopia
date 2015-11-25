@@ -49,6 +49,9 @@ class TestDictMapping(unittest.TestCase):
 
             self.assertTrue(1)
 
+        for key in test_collection:
+            print(key)
+
 
 
 
