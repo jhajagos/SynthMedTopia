@@ -146,7 +146,6 @@ def build_code_min_max_matrices(config, h5p, connection, path, forward_code_map_
     count_array_ds = h5p.create_dataset(path + "count_array/", shape=count_array.shape, dtype=count_array.dtype, compression="gzip")
     count_array_ds[...] = count_array
 
-
     print(min_day_array)
     print(max_day_array)
     print(count_array)
