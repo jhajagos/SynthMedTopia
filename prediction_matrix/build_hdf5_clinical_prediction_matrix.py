@@ -87,6 +87,7 @@ def generate_column_annotations_variables(variables_dict, column_annotations):
 
     return column_annotations
 
+
 def expand_template_dict(data_dict, template_list_dict):
     """Expand out to more detail based on encoded data in a data_dict"""
     new_templates = []
@@ -237,10 +238,13 @@ def build_translation_dict(data_dict, template_list_dict):
     return template_list_dict
 
 
-def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
+def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_list=None):
     """Each class will be a dataset in a hdf5 matrix"""
 
-    data_items_count = len(data_dict.keys())
+    data_items_count = len(data_dict)
+    if data_sort_key_list is None:
+        data_sort_key_list = data_dict.keys()
+        data_sort_key_list.sort()
 
     for data_translate_dict in data_translate_dict_list:
         template_type = data_translate_dict["type"]
@@ -262,7 +266,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
         if template_type in ("variables", "categorical_list"):
             core_array = np.zeros(shape=(data_items_count, offset_end))
-            column_annotations = np.zeros(shape=(3, offset_end), dtype="S64")
+            column_annotations = np.zeros(shape=(3, offset_end), dtype="S128")
 
         if template_type == "variables":
 
@@ -274,7 +278,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                 if variable_type == "categorical":
                     position_map = variable_dict["position_map"]
                     i = 0
-                    for data_key in data_dict:
+                    for data_key in data_sort_key_list:
                         datum_dict = data_dict[data_key]
                         dict_of_interest = get_entry_from_path(datum_dict, path)
 
@@ -294,7 +298,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                         process = None
                         variable_name = None
 
-                    for data_key in data_dict:
+                    for data_key in data_sort_key_list:
                         datum_dict = data_dict[data_key]
                         dict_of_interest = get_entry_from_path(datum_dict, path)
                         if dict_of_interest is not None:
@@ -326,16 +330,18 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                                                     process_list += [item[cell_value_field]]
                                             core_array[i, offset_start] = process_list[-1]
 
+                                        # TODO: Add min, max, n, first_item
+
                             if cell_value_field in dict_of_interest:
                                 field_value = dict_of_interest[cell_value_field]
                                 core_array[i, offset_start] = field_value
                         i += 1
 
-        elif template_type == "categorical_list":
+        elif template_type == "categorical_list": # position of item in the categorical list is coded
             cell_value_field = data_translate_dict["cell_value"]
             position_map = data_translate_dict["position_map"]
             i = 0
-            for data_key in data_dict:
+            for data_key in data_sort_key_list:
                 datum_dict = data_dict[data_key]
                 dict_of_interest = get_entry_from_path(datum_dict, path)
 
@@ -350,14 +356,9 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
                         j += 1
                 i += 1
 
-        if template_type in ("variables", "categorical_list"):
+        #TODO: Add "categorical_list_counting"
 
-            # if "export_path" in data_translate_dict:
-            #     export_path = data_translate_dict["export_path"]
-            # else:
-            #     export_path = data_translate_dict["path"]
-            #
-            # hdf5_base_path = "/".join(export_path)
+        if template_type in ("variables", "categorical_list"):
 
             hdf5_core_array_path = "/" + hdf5_base_path + "/core_array/"
             hdf5_column_annotation_path = "/" + hdf5_base_path + "/column_annotations/"
@@ -389,11 +390,11 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list):
 
             print("***************************")
 
-            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(3, offset_end), dtype="S64")
+            column_data_set = hdf5p.create_dataset(hdf5_column_annotation_path, shape=(3, offset_end), dtype="S128")
             column_data_set[...] = column_annotations
 
 
-def main(hdf5_file_name, data_json_file, data_template_json):
+def main(hdf5_file_name, data_json_file, data_template_json, sort_order_json=None):
     """Convert a JSON file to a HDF5 matrix format using a template"""
 
     #Import JSON files
@@ -403,6 +404,13 @@ def main(hdf5_file_name, data_json_file, data_template_json):
     with open(data_template_json, "r") as f:
         data_template_dict = json.load(f)
 
+
+    if sort_order_json is not None:
+        with open(sort_order_json) as f:
+            sort_order_list = json.load(f)
+    else:
+        sort_order_list = None
+
     data_template_dict = expand_template_dict(data_dict, data_template_dict)
     data_translate_dict = build_translation_dict(data_dict, data_template_dict)
     data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
@@ -411,13 +419,15 @@ def main(hdf5_file_name, data_json_file, data_template_json):
     pprint.pprint(data_translate_dict)
     f5p = h5py.File(hdf5_file_name, "w")
 
-    build_hdf5_matrix(f5p, data_dict, data_translate_dict)
+    build_hdf5_matrix(f5p, data_dict, data_translate_dict, sort_order_list)
 
 
 if __name__ == "__main__":
 
     if len(sys.argv) == 4:
         main(sys.argv[1], sys.argv[2], sys.argv[3])
+    elif len(sys.argv) == 5:
+        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
     elif len(sys.argv) == 2 and sys.argv[1] == "help":
         print("Usage: python build_hdf5_clinical_prediction_matrix.py output.hdf5 data_file.json data_template.json")
     else:
