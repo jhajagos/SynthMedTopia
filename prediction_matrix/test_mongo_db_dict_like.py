@@ -49,11 +49,15 @@ class TestDictMapping(unittest.TestCase):
 
             self.assertTrue(1)
 
+        keys = []
         for key in test_collection:
-            print(key)
+            keys += [key]
 
+        self.assertTrue("54321" in keys)
+        self.assertTrue("12345" in keys)
+        self.assertFalse("123" in keys)
 
-
+        self.assertEquals(len(keys), 2)
 
 if __name__ == '__main__':
     unittest.main()
