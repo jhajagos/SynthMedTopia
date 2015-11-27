@@ -7,18 +7,9 @@ import datetime
 import time
 import sys
 
-"""
-import pymongo
-import ssl
-client = pymongo.MongoClient('bmi-clinical-analytics-p0',ssl=True, ssl_cert_reqs=ssl.CERT_NONE)
 
->>> uri = 'mongodb://example.com/?ssl=true&ssl_cert_reqs=CERT_NONE'
->>> client = pymongo.MongoClient(uri)
-"""
-
-def datestamp():
+def generate_date_stamp():
     return time.strftime("%Y%m%d", time.gmtime())
-
 
 def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest, field_class_name,
                                                          transaction_id_field="transaction_id"):
@@ -117,7 +108,7 @@ def build_dict_based_on_transaction_id_query(rs, fields_of_interest, transaction
     :param rs:
     :param fields_of_interest:
     :param transaction_id_field:
-    :return:
+    :return: transaction_id_dict
     """
 
     transaction_id_dict = {}
@@ -176,10 +167,10 @@ def main_json(mapping_json_name, run_time_json_name):
 
     configuration = {"mapping_config": mapping_configuration, "runtime_config": runtime_configuration}
 
-    main(configuration)
+    return main(configuration)
 
 
-def main(configuration, results_dict_class=None):
+def main(configuration):
     """
 
     :param configuration:
@@ -192,6 +183,27 @@ def main(configuration, results_dict_class=None):
 
     main_config = configuration["mapping_config"]["main_transactions"]
     runtime_config = configuration["runtime_config"]
+
+    if "output_type" in runtime_config:
+        output_type = runtime_config["output_type"]
+    else:
+        output_type = "json_file"
+
+    if output_type == "json_file":
+        results_dict_class = None
+        results_dict = {}
+    # elif output_type == "mongodb_collection":
+    #     from mongodb_dict_like import DictMappingMongo
+    #     from pymongo import MongoClient
+    #
+    #     results_dict_class = 1
+    #     mongo_db_config = runtime_config["mongo_db_config"]
+    #     mongo_connection_string = mongo_db_config["connection_string"]
+    #     database_name = mongo_db_config["database_name"]
+    #     collection_name = mongo_db_config["collection_name"]
+    #
+    #     mongo_client = MongoClient(mongo_connection_string)
+    #     results_dict = DictMappingMongo(mongo_client, database_name, collection_name, "transaction_id")
 
     data_directory = runtime_config["json_file_config"]["data_directory"]
     base_file_name = runtime_config["json_file_config"]["base_file_name"]
@@ -270,10 +282,6 @@ def main(configuration, results_dict_class=None):
     query_wrapper = 'select zzz.* from (%s) zzz join %s yyy on zzz."' + transaction_id_field + '"' +' = yyy.transaction_id'
 
     mappings = configuration["mapping_config"]["mappings"]
-    if results_dict_class is None:
-        results_dict = {}  # TODO: Make this an interface so that we do not have use in memory storage
-    else:
-        results_dict = results_dict_class
 
     for transaction_id in transactions_of_interest:
         transaction_dict = {}
@@ -326,22 +334,21 @@ def main(configuration, results_dict_class=None):
                 current_dict[mapping["name"]] = result_dict_to_align
 
     #Write out order of keys
-
-    output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + "key_order_" + datestamp() + ".json")
+    output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + "key_order_" + generate_date_stamp() + ".json")
     transactions_of_interest_str = [str(x) for x in transactions_of_interest]
+    print("")
     print('Writing key order: "%s"' % output_key_order_file_name)
     with open(output_key_order_file_name, "w") as fw:
         json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
 
-
     #Write dictionary out
     if results_dict_class is None:
-
-        output_file_name = os.path.join(data_directory, base_file_name + "_" + datestamp() + ".json")
+        output_file_name = os.path.join(data_directory, base_file_name + "_" + generate_date_stamp() + ".json")
         print('Writing JSON file "%s"' % output_file_name)
         with open(output_file_name, "w") as fw:
             json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
+        return output_file_name, output_key_order_file_name
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:

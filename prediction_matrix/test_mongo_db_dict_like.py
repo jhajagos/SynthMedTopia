@@ -5,6 +5,7 @@ import unittest
 from mongodb_dict_like import DictMappingMongo
 from pymongo import MongoClient
 
+
 class TestDictMapping(unittest.TestCase):
 
     def setUp(self):

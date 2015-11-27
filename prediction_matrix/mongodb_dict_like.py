@@ -1,6 +1,5 @@
 __author__ = 'jhajagos'
 
-import pymongo
 
 class DictMappingMongo(object):
     """Create a dictionary like object that is backed by Mongodb Collection"""
