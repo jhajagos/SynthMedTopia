@@ -45,6 +45,7 @@ def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest,
     multi_class_list = []
 
     for r in rs:
+
         transaction_id = r[transaction_id_field]
         class_name = r[field_class_name]
 
@@ -88,7 +89,7 @@ def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest,
 
                 transaction_id_multi_class_dict = {}
 
-            elif cases_to_process == "start new list":
+            elif case_to_process == "start new list":
                 multi_class_list += [multi_class_dict]
 
         last_class_name = class_name
