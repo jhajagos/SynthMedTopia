@@ -41,7 +41,9 @@ def generate_column_annotations_categorical_list(categorical_list_dict, column_a
 
         column_annotations[0, i] = name.encode("ascii", errors="replace")
         column_annotations[1, i] = value.encode("ascii", errors="replace")
-        column_annotations[2, i] = description.encode("ascii", errors="replace")
+        if description is not None:
+            column_annotations[2, i] = description.encode("ascii", errors="replace")
+
 
     return column_annotations
 

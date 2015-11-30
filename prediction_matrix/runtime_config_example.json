@@ -1,7 +1,7 @@
 {
   "source_db_config": {
     "connection_string": "postgresql+psycopg2://user:password@host/db",
-    "where_criteria": "discharge_year = 2011 and representative_admission = 1",
+    "limit": null,
     "refresh_transactions_table": 1
   },
   "json_file_config": {

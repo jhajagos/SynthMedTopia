@@ -193,18 +193,6 @@ def main(configuration):
     if output_type == "json_file":
         results_dict_class = None
         results_dict = {}
-    # elif output_type == "mongodb_collection":
-    #     from mongodb_dict_like import DictMappingMongo
-    #     from pymongo import MongoClient
-    #
-    #     results_dict_class = 1
-    #     mongo_db_config = runtime_config["mongo_db_config"]
-    #     mongo_connection_string = mongo_db_config["connection_string"]
-    #     database_name = mongo_db_config["database_name"]
-    #     collection_name = mongo_db_config["collection_name"]
-    #
-    #     mongo_client = MongoClient(mongo_connection_string)
-    #     results_dict = DictMappingMongo(mongo_client, database_name, collection_name, "transaction_id")
 
     data_directory = runtime_config["json_file_config"]["data_directory"]
     base_file_name = runtime_config["json_file_config"]["base_file_name"]
@@ -230,13 +218,12 @@ def main(configuration):
         main_transaction_query += " order by"
         for field in main_config["fields_to_order_by"]:
             main_transaction_query += ' "%s",' % field
-
         main_transaction_query = main_transaction_query[:-1]
 
     transaction_id_field = main_config["transaction_id"]
 
-    if "limit" in main_config and main_config["limit"] is not None:
-        main_transaction_query += " limit %s" % main_config["limit"]
+    if "limit" in runtime_config["source_db_config"] and runtime_config["source_db_config"]["limit"] is not None:
+        main_transaction_query += " limit %s" % runtime_config["source_db_config"]["limit"]
 
     query_count = '''select count(*) as counter from (%s) zzz'''
     rs = execute_and_print(connection, query_count % main_transaction_query)

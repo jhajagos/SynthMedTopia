@@ -1,7 +1,7 @@
 {
   "source_db_config": {
     "connection_string": "sqlite:///test_db.db3",
-    "where_criteria": null,
+    "limit": null,
     "refresh_transactions_table": 1
   },
   "json_file_config": {
