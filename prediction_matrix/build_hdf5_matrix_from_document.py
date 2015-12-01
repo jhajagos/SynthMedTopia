@@ -44,7 +44,6 @@ def generate_column_annotations_categorical_list(categorical_list_dict, column_a
         if description is not None:
             column_annotations[2, i] = description.encode("ascii", errors="replace")
 
-
     return column_annotations
 
 
@@ -406,7 +405,6 @@ def main(hdf5_file_name, data_json_file, data_template_json, sort_order_json=Non
     with open(data_template_json, "r") as f:
         data_template_dict = json.load(f)
 
-
     if sort_order_json is not None:
         with open(sort_order_json) as f:
             sort_order_list = json.load(f)
@@ -431,6 +429,6 @@ if __name__ == "__main__":
     elif len(sys.argv) == 5:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
     elif len(sys.argv) == 2 and sys.argv[1] == "help":
-        print("Usage: python build_hdf5_clinical_prediction_matrix.py output.hdf5 data_file.json data_template.json")
+        print("Usage: python build_hdf5_matrix_from_document.py output.hdf5 data_file.json data_template.json [key_order.json]")
     else:
         main("matrix_build.hdf5", "fake_inpatient_readmission_data.json", "configuration_to_build_matrix.json")

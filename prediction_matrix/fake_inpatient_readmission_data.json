@@ -18,7 +18,9 @@
                 "discharge":
                 {
                     "age": 50,
-                    "gender": "M"
+                    "gender": "M",
+                    "admit_date": "2012-01-01",
+                    "discharge_date": "2014-01-01"
                 },
                 "diagnosis":
                 [
@@ -28,10 +30,10 @@
                 ],
                 "pulse":
                     [
-                        {"rate": 55},
-                        {"rate": 60},
-                        {"rate": 70},
-                        {"rate": 40}
+                        {"rate": 55,  "result": "normal"},
+                        {"rate": 60,  "result": "normal"},
+                        {"rate": 200, "result": "high"},
+                        {"rate": 40,  "result": "low"}
                     ]
             }
         },
@@ -81,9 +83,9 @@
                     }
                 ],
                 "pulse": [
-                    {"rate": 110},
-                    {"rate": 105},
-                    {"rate": 120}
+                    {"rate": 110, "result": "normal"},
+                    {"rate": 105, "result": "normal"},
+                    {"rate": 120, "result": "normal"}
                 ]
             }
         },
