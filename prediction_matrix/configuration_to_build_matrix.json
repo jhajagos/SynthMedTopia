@@ -21,7 +21,7 @@
         "cell_value": "code",
         "description": "description"
     },
-     {
+    {
         "path": ["independent", "classes", "diagnosis"],
         "export_path": ["independent", "classes", "diagnosis2"],
         "type": "categorical_list",
@@ -34,11 +34,24 @@
     },
     {
         "path": ["independent", "classes", "lab"],
+        "export_path": ["independent", "classes", "lab", "last_item"],
         "type": "classes_templates",
         "class_type": "variables",
         "class_template":
             {
                 "process": "last_item",
+                "type": "numeric_list",
+                "cell_value": "value"
+            }
+    },
+    {
+        "path": ["independent", "classes", "lab"],
+        "export_path": ["independent", "classes", "lab", "count"],
+        "type": "classes_templates",
+        "class_type": "variables",
+        "class_template":
+            {
+                "process": "count",
                 "type": "numeric_list",
                 "cell_value": "value"
             }
@@ -67,5 +80,17 @@
                 "name": "pulse"
             }],
         "type": "variables"
+    },
+    {
+        "path": ["independent", "classes", "lab"],
+        "export_path": ["independent", "classes", "lab", "category"],
+        "type": "classes_templates",
+        "class_type": "variables",
+        "class_template":
+            {
+                "process": "count_categories",
+                "type": "categorical_list",
+                "cell_value": "result_category"
+            }
     }
 ]

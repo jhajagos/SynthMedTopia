@@ -5,13 +5,20 @@
                 "lab": {
                     "BUN": [
                         {
-                            "value": 5
+                            "value": 5,
+                            "result_category": "high"
                         },
                         {
-                            "value": 5
+                            "value": 5,
+                            "result_category": "high"
                         },
                         {
-                            "value": 6
+                            "value": 6,
+                            "result_category": "high"
+                        },
+                        {
+                            "value": 4,
+                            "result_category": "high"
                         }
                     ]
                 },
@@ -30,10 +37,10 @@
                 ],
                 "pulse":
                     [
-                        {"rate": 55,  "result": "normal"},
-                        {"rate": 60,  "result": "normal"},
-                        {"rate": 200, "result": "high"},
-                        {"rate": 40,  "result": "low"}
+                        {"rate": 55,  "result_category": "normal"},
+                        {"rate": 60,  "result_category": "normal"},
+                        {"rate": 200, "result_category": "high"},
+                        {"rate": 40,  "result_category": "low"}
                     ]
             }
         },
@@ -53,18 +60,26 @@
                 "lab": {
                     "BUN": [
                         {
-                            "value": 1
+                            "value": 1,
+                            "result_category": "low"
                         },
                         {
-                            "value": 3
+                            "value": 3,
+                            "result_category": "high"
                         },
                         {
-                            "value": 2
+                            "value": 2,
+                            "result_category": "normal"
+                        },
+                        {
+                            "value": 2,
+                            "result_category": "normal"
                         }
                     ],
                     "Troponin": [
                         {
-                            "value": 0.1
+                            "value": 0.1,
+                            "result_category": "extreme"
                         }
                     ]
                 },
@@ -83,9 +98,9 @@
                     }
                 ],
                 "pulse": [
-                    {"rate": 110, "result": "normal"},
-                    {"rate": 105, "result": "normal"},
-                    {"rate": 120, "result": "normal"}
+                    {"rate": 110, "result_category": "normal"},
+                    {"rate": 105, "result_category": "normal"},
+                    {"rate": 120, "result_category": "normal"}
                 ]
             }
         },

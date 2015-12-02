@@ -53,7 +53,7 @@ def generate_column_annotations_variables(variables_dict, column_annotations):
     for variable_dict in variables_dict["variables"]:
         offset_start = variable_dict["offset_start"]
         variable_type = variable_dict["type"]
-        if variable_type == "categorical":
+        if variable_type in ("categorical", "categorical_list"):
             position_map = variable_dict["position_map"]
 
             position_map_reverse = {}
@@ -65,7 +65,10 @@ def generate_column_annotations_variables(variables_dict, column_annotations):
 
                 value = position_map_reverse[i]
 
-                field_value = variable_dict["cell_value"]
+                if variable_type == "categorical":
+                    field_value = variable_dict["cell_value"]
+                else:
+                    field_value = variable_dict["name"]
 
                 descriptions = variable_dict["descriptions"]
                 if value in descriptions:
@@ -141,7 +144,7 @@ def add_offsets_to_translation_dict(template_list_dict):
             for variable_dict in variable_dicts:
 
                 variable_type = variable_dict["type"]
-                if variable_type == "categorical":
+                if variable_type in ("categorical", "categorical_list"):
                     n_categories = variable_dict["n_categories"]
                     offset_end = offset_start + n_categories
                 else:
@@ -201,6 +204,35 @@ def build_translation_dict(data_dict, template_list_dict):
                     variable_dict["descriptions"] = description_dict
                     variable_dict["n_categories"] = len(position_map.keys())
 
+                elif variable_type == "categorical_list":
+                    label_dict = {}
+
+                    for data_key in data_dict:
+                        dict_of_interest = get_entry_from_path(datum_dict, path)
+
+                        variable_name = variable_dict["name"]
+                        if variable_name in dict_of_interest:
+                            list_of_interest = dict_of_interest[variable_name]
+                            item_value_field = variable_dict["cell_value"]
+                            for item in list_of_interest:
+                                if item_value_field in item:
+                                    item_value = item[item_value_field]
+                                    if item_value in item_dict:
+                                        item_dict[item_value] += 1
+                                    else:
+                                        item_dict[item_value] = 1
+
+                    data_keys = item_dict.keys()
+                    data_keys.sort()
+
+                    position_map = {}
+                    for i in range(len(data_keys)):
+                        position_map[data_keys[i]] = i
+                    variable_dict["position_map"] = position_map
+                    variable_dict["n_categories"] = len(position_map.keys())
+                    variable_dict["descriptions"] = {}
+
+
         elif template_type == "categorical_list":
 
             description_dict = {}
@@ -223,6 +255,7 @@ def build_translation_dict(data_dict, template_list_dict):
                                     description_dict[value_of_interest] = dict_of_interest[template_dict["description"]]
                                 if "label" in template_dict:
                                     label_dict[value_of_interest] = dict_of_interest[template_dict["label"]]
+
 
             data_keys = item_dict.keys()
             data_keys.sort()
@@ -288,6 +321,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                             field_value_position = position_map[field_value]
                             core_array[i, offset_start + field_value_position] = 1
                         i += 1
+
                 else:
                     i = 0
 
@@ -298,6 +332,11 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                     else:
                         process = None
                         variable_name = None
+
+                    if "position_map" in variable_dict:
+                        position_map = variable_dict["position_map"]
+                    else:
+                        position_map = {}
 
                     for data_key in data_sort_key_list:
                         datum_dict = data_dict[data_key]
@@ -313,7 +352,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                 if list_of_interest is not None:
                                     if variable_type == 'numeric_list':
 
-                                        if process == "median":
+                                        if process in ("median", "count", "last_item"):
                                             process_list = []
                                             for item in list_of_interest:
                                                 if cell_value_field in item:
@@ -321,17 +360,22 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                                     if cell_value is not None:
                                                         process_list += [cell_value]
                                             process_array = np.array(process_list)
-                                            median_value = np.median(process_array)
-                                            core_array[i, offset_start] = median_value
+                                            if process == "median":
+                                                median_value = np.median(process_array)
+                                                core_array[i, offset_start] = median_value
+                                            elif process == "last_item":
+                                                core_array[i, offset_start] = process_list[-1]
+                                            elif process == "count":
+                                                core_array[i, offset_start] = len(process_list)
 
-                                        elif process == "last_item":
-                                            process_list = []
+                                    elif variable_type == 'categorical_list':
+                                        if process == "count_categories":
                                             for item in list_of_interest:
                                                 if cell_value_field in item:
-                                                    process_list += [item[cell_value_field]]
-                                            core_array[i, offset_start] = process_list[-1]
-
-                                        # TODO: Add min, max, n, first_item
+                                                    cell_value = item[cell_value_field]
+                                                    if cell_value is not None:
+                                                        position = position_map[str(cell_value)]
+                                                        core_array[i, offset_start + position] += 1
 
                             if cell_value_field in dict_of_interest:
                                 field_value = dict_of_interest[cell_value_field]
@@ -351,13 +395,15 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                     for item_dict in dict_of_interest:
                         if cell_value_field in item_dict:
                             field_value = item_dict[cell_value_field]
-                            position = position_map[str(field_value)]
-                            if core_array[i, position] == 0:
-                                core_array[i, position] = j + 1
+                            if process == "list_position":
+                                position = position_map[str(field_value)]
+                                if core_array[i, position] == 0:
+                                    core_array[i, position] = j + 1
+
                         j += 1
                 i += 1
 
-        #TODO: Add "categorical_list_counting"
+
 
         if template_type in ("variables", "categorical_list"):
 
@@ -416,6 +462,9 @@ def main(hdf5_file_name, data_json_file, data_template_json, sort_order_json=Non
     data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
 
     print("Generated data template:\n")
+    with open("data_translate_dict.json", "w") as fw:
+        json.dump(data_translate_dict, fw, indent=4, separators=(',', ': '))
+
     pprint.pprint(data_translate_dict)
     f5p = h5py.File(hdf5_file_name, "w")
 
