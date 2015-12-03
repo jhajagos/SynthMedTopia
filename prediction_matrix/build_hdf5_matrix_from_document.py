@@ -353,11 +353,13 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
 
                                         if process in ("median", "count", "last_item"):
                                             process_list = []
+                                            counter = 0
                                             for item in list_of_interest:
                                                 if cell_value_field in item:
                                                     cell_value = item[cell_value_field]
                                                     if cell_value is not None:
                                                         process_list += [cell_value]
+                                                    counter += 1
                                             process_array = np.array(process_list)
                                             if process == "median":
                                                 median_value = np.median(process_array)
@@ -365,7 +367,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                             elif process == "last_item":
                                                 core_array[i, offset_start] = process_list[-1]
                                             elif process == "count":
-                                                core_array[i, offset_start] = len(process_list)
+                                                core_array[i, offset_start] = counter # Handles None values
 
                                     elif variable_type == 'categorical_list':
                                         if process == "count_categories":

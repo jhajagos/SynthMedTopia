@@ -3,7 +3,7 @@ __author__ = 'janos'
 import unittest
 import h5py
 import build_hdf5_matrix_from_document as bhm
-
+import numpy as np
 
 class RunHDF5Mapping(unittest.TestCase):
     def test_mapping(self):
@@ -30,6 +30,8 @@ class RunHDF5Mapping(unittest.TestCase):
         self.assertEqual(lab_category_count_c.tolist(), [['BUN', 'BUN', 'BUN', 'Troponin'],
                                                          ['high', 'low', 'normal', 'extreme'],
                                                          ['', '', '', '']])
+
+        self.assertEquals(np.sum(lab_category_count), np.sum(lab_count), "Sums should be equal")
 
 if __name__ == '__main__':
     unittest.main()
