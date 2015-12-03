@@ -205,13 +205,13 @@ def build_translation_dict(data_dict, template_list_dict):
                     variable_dict["n_categories"] = len(position_map.keys())
 
                 elif variable_type == "categorical_list":
-                    label_dict = {}
 
                     for data_key in data_dict:
+                        datum_dict = data_dict[data_key]
                         dict_of_interest = get_entry_from_path(datum_dict, path)
 
                         variable_name = variable_dict["name"]
-                        if variable_name in dict_of_interest:
+                        if dict_of_interest is not None and variable_name in dict_of_interest:
                             list_of_interest = dict_of_interest[variable_name]
                             item_value_field = variable_dict["cell_value"]
                             for item in list_of_interest:
@@ -231,7 +231,6 @@ def build_translation_dict(data_dict, template_list_dict):
                     variable_dict["position_map"] = position_map
                     variable_dict["n_categories"] = len(position_map.keys())
                     variable_dict["descriptions"] = {}
-
 
         elif template_type == "categorical_list":
 
@@ -462,8 +461,8 @@ def main(hdf5_file_name, data_json_file, data_template_json, sort_order_json=Non
     data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
 
     print("Generated data template:\n")
-    with open("data_translate_dict.json", "w") as fw:
-        json.dump(data_translate_dict, fw, indent=4, separators=(',', ': '))
+    # with open("data_translate_dict.json", "w") as fw:
+    #     json.dump(data_translate_dict, fw, indent=4, separators=(',', ': '))
 
     pprint.pprint(data_translate_dict)
     f5p = h5py.File(hdf5_file_name, "w")
