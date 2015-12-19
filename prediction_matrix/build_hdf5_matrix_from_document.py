@@ -384,6 +384,11 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                         i += 1
 
         elif template_type == "categorical_list": # position of item in the categorical list is coded
+            if "process" in data_translate_dict:
+                process = data_translate_dict["process"]
+            else:
+                process = None
+
             cell_value_field = data_translate_dict["cell_value"]
             position_map = data_translate_dict["position_map"]
             i = 0
@@ -400,7 +405,6 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                 position = position_map[str(field_value)]
                                 if core_array[i, position] == 0:
                                     core_array[i, position] = j + 1
-
                         j += 1
                 i += 1
 

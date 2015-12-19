@@ -33,5 +33,10 @@ class RunHDF5Mapping(unittest.TestCase):
 
         self.assertEquals(np.sum(lab_category_count), np.sum(lab_count), "Sums should be equal")
 
+        diagnosis1 = f5["/independent/classes/diagnosis/core_array"][...]
+        diagnosis_c = f5["/independent/classes/diagnosis/column_annotations"]
+
+        self.assertTrue(np.sum(diagnosis1) > 0)
+
 if __name__ == '__main__':
     unittest.main()
