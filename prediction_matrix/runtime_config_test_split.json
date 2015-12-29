@@ -6,7 +6,7 @@
     "batch_size": 5
   },
   "json_file_config": {
-     "base_file_name": "transactions",
+     "base_file_name": "transactions_split",
      "data_directory": "./"
   },
   "mongo_db_config": {

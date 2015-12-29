@@ -101,7 +101,7 @@ class TestDBMappingJSON(unittest.TestCase):
         with open(mapping_json_one, "r") as f:
             mapping_dict = json.load(f)
             self.assertEquals(len(mapping_dict), 5)
-            keys = ['999', '1005', '1003', '1001', '1000']
+            keys = ['1000','1001','1005', '1009']
 
             for key in keys:
                 self.assertTrue(key in mapping_dict.keys())
@@ -110,7 +110,7 @@ class TestDBMappingJSON(unittest.TestCase):
         with open(mapping_json_two, "r") as f:
             mapping_dict = json.load(f)
             self.assertEquals(len(mapping_dict), 3)
-            keys = ['1009', '1010', '20000']
+            keys = ['1010', '999', '20000']
 
             for key in keys:
                 self.assertTrue(key in mapping_dict.keys())

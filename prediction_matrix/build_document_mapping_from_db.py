@@ -206,7 +206,7 @@ def main(configuration):
 
     refresh_transactions_table = runtime_config["source_db_config"]["refresh_transactions_table"]
     if schema is not None:
-        main_transaction_table = schema + "." + '"' + main_config["table_name"] + '"' #TODO: Add proper escaping
+        main_transaction_table = schema + "." + '"' + main_config["table_name"] + '"'  # TODO: Add proper escaping
     else:
         main_transaction_table = main_config["table_name"]
 
@@ -234,14 +234,22 @@ def main(configuration):
     rs = execute_and_print(connection, main_transaction_query)
     print("Converting results")
 
-    i = 0
-    transactions_of_interest = []
-    for r in rs:
-        transaction_id = r[transaction_id_field]
-        transactions_of_interest += [transaction_id]
-        i += 1
+    if "batch_size" in runtime_config["source_db_config"]:
+        batch_size = runtime_config["source_db_config"]["batch_size"]
+    else:
+        batch_size = record_count
 
-    sorted_transactions_of_interest = sorted(transactions_of_interest)
+    i = 0
+    transactions_of_interest_with_batch = []
+    batch_id = 1
+    for r in rs:
+
+        if i % batch_size == 0 and i > 0:
+            batch_id += 1
+
+        transaction_id = r[transaction_id_field]
+        transactions_of_interest_with_batch += [(transaction_id, batch_id)]
+        i += 1
 
     if schema is not None:
         transactions_of_interest_table = "%s.tmp_transactions_of_interest" % schema
@@ -250,18 +258,16 @@ def main(configuration):
 
     drop_table_if_exists = "drop table if exists %s" % transactions_of_interest_table
     create_table_sql = "create table %s" % transactions_of_interest_table
-    create_table_sql += " (transaction_id int8)"  # TODO: Get transaction id in correct format
-
-
-    n_transactions = len(transactions_of_interest)
+    create_table_sql += " (transaction_id int8, batch_id int)"  # TODO: Get transaction id in correct format
 
     if refresh_transactions_table:
         execute_and_print(connection, drop_table_if_exists)
         execute_and_print(connection, create_table_sql)
 
         i = 0
-        for transaction_id in transactions_of_interest:
-            insert_query = 'insert into %s values (%s)' % (transactions_of_interest_table, transaction_id)
+        for transaction_id_batch_id in transactions_of_interest_with_batch:
+            transaction_id, batch_id = transaction_id_batch_id
+            insert_query = 'insert into %s values (%s, %s)' % (transactions_of_interest_table, transaction_id, batch_id)
             connection.execute(insert_query)
 
             i += 1
@@ -272,39 +278,29 @@ def main(configuration):
         index_query = "create unique index idx_tmp_toi on %s(transaction_id)" % transactions_of_interest_table
         execute_and_print(connection, index_query)
 
-    if "batch_size" in runtime_config["source_db_config"]:
-        batch_size = runtime_config["source_db_config"]["batch_size"]
-    else:
-        batch_size = n_transactions
+    query_batch = "select distinct batch_id from %s order by batch_id" % transactions_of_interest_table
+    rs = execute_and_print(connection, query_batch)
+    batches = [x[0] for x in rs]
+    number_of_batches = len(batches)
 
-    batch_sizes_list = []
-
-    number_of_batches = n_transactions // batch_size
-    if n_transactions % batch_size > 0:
-        number_of_batches += 1
-
-    for i in range(number_of_batches):
-        start_i = i * batch_size
-        end_i = start_i + batch_size - 1
-        if end_i > (n_transactions - 1):
-            end_i = n_transactions - 1
-
-        batch_sizes_list += [(start_i, end_i)]
-
-    b = 0
     output_file_names_list = []
-    for batch_indices in batch_sizes_list:
+    for batch_id in batches:
         results_dict = {}
-        b += 1
-        print("Batch %s / %s" % (b, number_of_batches))
+        print("Batch %s / %s" % (batch_id, number_of_batches))
+
+        print("Getting IDs associated with batch")
+
+        query_batch_ids = "select transaction_id from %s where batch_id = %s" % (transactions_of_interest_table, batch_id)
+        rs = execute_and_print(connection, query_batch_ids)
+        batch_transactions_ids = [x[0] for x in rs]
 
         print("Extracting features")
         query_wrapper = 'select zzz.* from (%s) zzz join %s yyy on zzz."' + transaction_id_field + '"' +' = yyy.transaction_id'
-        query_wrapper += ' and yyy.transaction_id between %s and %s' % (sorted_transactions_of_interest[batch_indices[0]], sorted_transactions_of_interest[batch_indices[1]])
+        query_wrapper += ' and yyy.batch_id = %s' % batch_id
 
         mappings = configuration["mapping_config"]["mappings"]
 
-        for transaction_id in sorted_transactions_of_interest[batch_indices[0]:batch_indices[1] + 1]:
+        for transaction_id in batch_transactions_ids:
             transaction_dict = {}
             for mapping in mappings:
                 current_dict = transaction_dict
@@ -356,16 +352,15 @@ def main(configuration):
 
         # Write dictionary out
         if results_dict_class is None:
-            output_file_name = os.path.join(data_directory, base_file_name + "_" + str(b) + "_" + generate_date_stamp() + ".json")
+            output_file_name = os.path.join(data_directory, base_file_name + "_" + str(batch_id) + "_" + generate_date_stamp() + ".json")
             output_file_names_list += [output_file_name]
             print('Writing JSON file "%s"' % output_file_name)
             with open(output_file_name, "w") as fw:
                 json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
-
-     #Write out order of keys
+    # Write out order of keys
     output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + "key_order_" + generate_date_stamp() + ".json")
-    transactions_of_interest_str = [str(x) for x in transactions_of_interest]
+    transactions_of_interest_str = [str(x[0]) for x in transactions_of_interest_with_batch]
     print("")
     print('Writing key order: "%s"' % output_key_order_file_name)
     with open(output_key_order_file_name, "w") as fw:
