@@ -5,8 +5,8 @@ import h5py
 import numpy as np
 import pprint
 import sys
-import glob
 import os
+
 
 def get_entry_from_path(dict_with_path, path_list):
     """Traverses a path list in a dict of dicts"""
@@ -458,27 +458,28 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
             column_data_set[...] = column_annotations
 
 
-def main(hdf5_base_name, data_json_file_pattern, data_template_json, sort_order_json_pattern=None, refresh_template=True, output_directory=None):
+def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_template=True, output_directory=None):
     """Convert a JSON file to a HDF5 matrix format using a template"""
-
-    if "*" in data_json_file_pattern:
-        data_json_files = glob.glob(data_json_file_pattern)
-    else:
-        data_json_files = [data_json_file_pattern]
-
-    if sort_order_json_pattern is not None: # TODO: This needs to be changed as it is dependent on glob order
-        if "*" in sort_order_json_pattern:
-            sort_order_json_files = glob.glob(sort_order_json_pattern)
-        else:
-            sort_order_json_files = [sort_order_json_pattern]
-
 
     with open(data_template_json, "r") as f:
         data_template_dict = json.load(f)
 
+    with open(batch_json_file_name) as fj:
+        batch_list_dict = json.load(fj)
+
+    data_json_files = [x["data_json_file"] for x in batch_list_dict]
+
+    sort_order_dict = {}
+    batch_ids = []
+    for list_dict in batch_list_dict:
+        batch_id = list_dict["batch_id"]
+        batch_ids += [batch_id]
+        if "sort_order_file_name" in list_dict:
+            sort_order_file_name = list_dict["sort_order_file_name"]
+            sort_order_dict[batch_id] = sort_order_file_name
+
     if output_directory is None:
         output_directory = os.path.abspath(os.path.split(data_json_files[0])[0])
-
     data_translate_dict_json_name = os.path.join(output_directory, hdf5_base_name + "_data_template.json")
 
     if refresh_template:
@@ -497,17 +498,18 @@ def main(hdf5_base_name, data_json_file_pattern, data_template_json, sort_order_
     generated_hdf5_file_names = []
     ks = 0
     for data_json_file in data_json_files:
-        number = data_json_file.split("_")[-2]  # TODO: This needs to be changed as it is dependent on filename
-        hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + number + "_" + ".hdf5")
+        batch_number = batch_ids[ks]
+        hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + ".hdf5")
         generated_hdf5_file_names += [hdf5_file_name]
 
         with open(data_json_file, "r") as fj:
             data_dict = json.load(fj)
             f5p = h5py.File(hdf5_file_name, "w")
-            if sort_order_json_pattern is not None:
-                sort_order_json = sort_order_json_files[ks]
-                with open(sort_order_json) as f:
-                    sort_order_list = json.load(f)
+
+            if batch_number in sort_order_dict:
+                sort_order_json_name = sort_order_dict[batch_number]
+                with open(sort_order_json_name, "r") as fj:
+                    sort_order_list = json.load(fj)
             else:
                 sort_order_list = None
 
@@ -521,6 +523,6 @@ if __name__ == "__main__":
     elif len(sys.argv) == 5:
         main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
     elif len(sys.argv) == 2 and sys.argv[1] == "help":
-        print("Usage: python build_hdf5_matrix_from_document.py output.hdf5 data_file.json data_template.json [key_order.json]")
+        print("Usage: python build_hdf5_matrix_from_document.py data_file_base_name batch_dict.json data_template.json")  # TODO: Update usage
     else:
-        main("matrix_build.hdf5", "fake_inpatient_readmission_data.json", "configuration_to_build_matrix.json")
+        main("matrix_build", "test_simple_batch.json", "configuration_to_build_matrix.json")

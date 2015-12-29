@@ -8,8 +8,8 @@ import numpy as np
 class RunHDF5Mapping(unittest.TestCase):
     def test_mapping(self):
 
-        bhm.main("transaction_test", "fake_inpatient_readmission_data.json", "configuration_to_build_matrix.json")
-        f5 = h5py.File("transaction_test_readmission_.hdf5",'r')
+        bhm.main("transaction_test", "test_simple_batch.json", "configuration_to_build_matrix.json")
+        f5 = h5py.File("transaction_test_1.hdf5",'r')
         dca = f5["/independent/classes/discharge/core_array"][...]
         self.assertEquals(dca.shape, (2, 3))
 

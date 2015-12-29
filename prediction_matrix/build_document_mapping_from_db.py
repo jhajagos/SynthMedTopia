@@ -183,6 +183,8 @@ def main(configuration):
     Writes out a file
     """
 
+    # TODO: Generate JSON file which outputs which files are included in a batch
+
     connection_string = configuration["runtime_config"]["source_db_config"]["connection_string"]
 
     main_config = configuration["mapping_config"]["main_transactions"]
@@ -287,6 +289,7 @@ def main(configuration):
 
     output_file_names_list = []
     output_key_order_file_list = []
+    batch_results_list_dict = []
     for batch_id in batches:
         results_dict = {}
         print("Batch %s / %s" % (batch_id, number_of_batches))
@@ -370,6 +373,14 @@ def main(configuration):
             with open(output_key_order_file_name, "w") as fw:
                 json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
 
+            batch_results_list_dict += [{"batch_id": batch_id, "data_json_file": os.path.abspath(output_file_name), "sort_order_file_name": os.path.abspath(output_key_order_file_name)}]
+
+        json_batch_file = os.path.join(data_directory, base_file_name + "_batches_" + generate_date_stamp() + ".json")
+        print()
+        print("Writing batch files that were run")
+
+        with open(json_batch_file, "w") as fwj:
+            json.dump(batch_results_list_dict, fwj, sort_keys=True, indent=4, separators=(',', ': '))
 
 
     return output_file_names_list, output_key_order_file_list
