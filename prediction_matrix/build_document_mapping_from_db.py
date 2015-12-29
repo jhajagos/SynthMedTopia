@@ -101,6 +101,8 @@ def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest,
         transaction_id_multi_class_dict[last_class_name] = multi_class_list
         results_dict[last_transaction_id] = transaction_id_multi_class_dict
 
+    print("Number of rows read %s" % l)
+
     return results_dict
 
 
@@ -284,6 +286,7 @@ def main(configuration):
     number_of_batches = len(batches)
 
     output_file_names_list = []
+    output_key_order_file_list = []
     for batch_id in batches:
         results_dict = {}
         print("Batch %s / %s" % (batch_id, number_of_batches))
@@ -358,15 +361,18 @@ def main(configuration):
             with open(output_file_name, "w") as fw:
                 json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
 
-    # Write out order of keys
-    output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + "key_order_" + generate_date_stamp() + ".json")
-    transactions_of_interest_str = [str(x[0]) for x in transactions_of_interest_with_batch]
-    print("")
-    print('Writing key order: "%s"' % output_key_order_file_name)
-    with open(output_key_order_file_name, "w") as fw:
-        json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
+            # Write out order of keys
+            output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + str(batch_id) + "_" + "key_order_" + generate_date_stamp() + ".json")
+            output_key_order_file_list += [output_key_order_file_name]
+            transactions_of_interest_str = [str(x) for x in  batch_transactions_ids]
+            print("")
+            print('Writing key order: "%s"' % output_key_order_file_name)
+            with open(output_key_order_file_name, "w") as fw:
+                json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
 
-    return output_file_names_list, output_key_order_file_name
+
+
+    return output_file_names_list, output_key_order_file_list
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:

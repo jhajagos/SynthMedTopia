@@ -5,7 +5,8 @@ import h5py
 import numpy as np
 import pprint
 import sys
-
+import glob
+import os
 
 def get_entry_from_path(dict_with_path, path_list):
     """Traverses a path list in a dict of dicts"""
@@ -92,7 +93,7 @@ def generate_column_annotations_variables(variables_dict, column_annotations):
     return column_annotations
 
 
-def expand_template_dict(data_dict, template_list_dict):
+def expand_template_dict(json_data_dict_list, template_list_dict):
     """Expand out to more detail based on encoded data in a data_dict"""
     new_templates = []
 
@@ -106,13 +107,18 @@ def expand_template_dict(data_dict, template_list_dict):
 
         if template_type == "classes_templates":
             entry_classes = []
-            for data_key in data_dict:
-                data = data_dict[data_key]
-                entries = get_entry_from_path(data, path)
-                if entries is not None:
-                    for key in entries:
-                        if key not in entry_classes:
-                            entry_classes += [key]
+            for json_file in json_data_dict_list:
+                with open(json_file, "r") as fj:
+                    data_dict = json.load(fj)
+
+                for data_key in data_dict:
+                    data = data_dict[data_key]
+                    entries = get_entry_from_path(data, path)
+                    if entries is not None:
+                        for key in entries:
+                            if key not in entry_classes:
+                                entry_classes += [key]
+
             template_class = template_dict["class_template"]
             entry_classes_dict = []
             entry_classes.sort()
@@ -165,7 +171,7 @@ def add_offsets_to_translation_dict(template_list_dict):
     return template_list_dict
 
 
-def build_translation_dict(data_dict, template_list_dict):
+def build_translation_dict(json_data_dict_list, template_list_dict):
     """For categorical variables build lookup dicts"""
     for template_dict in template_list_dict:
         template_type = template_dict["type"]
@@ -179,19 +185,24 @@ def build_translation_dict(data_dict, template_list_dict):
                 if variable_type == "categorical":
                     description_dict = {}
                     label_dict = {}
-                    for data_key in data_dict:
-                        datum_dict = data_dict[data_key]
-                        dict_of_interest = get_entry_from_path(datum_dict, path)
-                        if variable_dict["cell_value"] in dict_of_interest:
-                            value_of_interest = str(dict_of_interest[variable_dict["cell_value"]])
-                            if value_of_interest in item_dict:
-                                item_dict[value_of_interest] += 1
-                            else:
-                                item_dict[value_of_interest] = 1
-                                if "description" in variable_dict:
-                                    description_dict[value_of_interest] = dict_of_interest[variable_dict["description"]]
-                                if "label" in variable_dict:
-                                    label_dict[value_of_interest] = dict_of_interest[variable_dict["label"]]
+                    for json_file in json_data_dict_list:
+
+                        with open(json_file, "r") as fj:
+                            data_dict = json.load(fj)
+
+                        for data_key in data_dict:
+                            datum_dict = data_dict[data_key]
+                            dict_of_interest = get_entry_from_path(datum_dict, path)
+                            if variable_dict["cell_value"] in dict_of_interest:
+                                value_of_interest = str(dict_of_interest[variable_dict["cell_value"]])
+                                if value_of_interest in item_dict:
+                                    item_dict[value_of_interest] += 1
+                                else:
+                                    item_dict[value_of_interest] = 1
+                                    if "description" in variable_dict:
+                                        description_dict[value_of_interest] = dict_of_interest[variable_dict["description"]]
+                                    if "label" in variable_dict:
+                                        label_dict[value_of_interest] = dict_of_interest[variable_dict["label"]]
 
                     data_keys = item_dict.keys()
                     data_keys.sort()
@@ -206,21 +217,25 @@ def build_translation_dict(data_dict, template_list_dict):
 
                 elif variable_type == "categorical_list":
 
-                    for data_key in data_dict:
-                        datum_dict = data_dict[data_key]
-                        dict_of_interest = get_entry_from_path(datum_dict, path)
+                    for json_file in json_data_dict_list:
+                        with open(json_file, "r") as fj:
+                            data_dict = json.load(fj)
 
-                        variable_name = variable_dict["name"]
-                        if dict_of_interest is not None and variable_name in dict_of_interest:
-                            list_of_interest = dict_of_interest[variable_name]
-                            item_value_field = variable_dict["cell_value"]
-                            for item in list_of_interest:
-                                if item_value_field in item:
-                                    item_value = item[item_value_field]
-                                    if item_value in item_dict:
-                                        item_dict[item_value] += 1
-                                    else:
-                                        item_dict[item_value] = 1
+                        for data_key in data_dict:
+                            datum_dict = data_dict[data_key]
+                            dict_of_interest = get_entry_from_path(datum_dict, path)
+
+                            variable_name = variable_dict["name"]
+                            if dict_of_interest is not None and variable_name in dict_of_interest:
+                                list_of_interest = dict_of_interest[variable_name]
+                                item_value_field = variable_dict["cell_value"]
+                                for item in list_of_interest:
+                                    if item_value_field in item:
+                                        item_value = item[item_value_field]
+                                        if item_value in item_dict:
+                                            item_dict[item_value] += 1
+                                        else:
+                                            item_dict[item_value] = 1
 
                     data_keys = item_dict.keys()
                     data_keys.sort()
@@ -254,7 +269,6 @@ def build_translation_dict(data_dict, template_list_dict):
                                     description_dict[value_of_interest] = dict_of_interest[template_dict["description"]]
                                 if "label" in template_dict:
                                     label_dict[value_of_interest] = dict_of_interest[template_dict["label"]]
-
 
             data_keys = item_dict.keys()
             data_keys.sort()
@@ -408,8 +422,6 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                         j += 1
                 i += 1
 
-
-
         if template_type in ("variables", "categorical_list"):
 
             hdf5_core_array_path = "/" + hdf5_base_path + "/core_array/"
@@ -446,35 +458,61 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
             column_data_set[...] = column_annotations
 
 
-def main(hdf5_file_name, data_json_file, data_template_json, sort_order_json=None):
+def main(hdf5_base_name, data_json_file_pattern, data_template_json, sort_order_json_pattern=None, refresh_template=True, output_directory=None):
     """Convert a JSON file to a HDF5 matrix format using a template"""
 
-    #Import JSON files
-    with open(data_json_file, "r") as f:
-        data_dict = json.load(f)
+    if "*" in data_json_file_pattern:
+        data_json_files = glob.glob(data_json_file_pattern)
+    else:
+        data_json_files = [data_json_file_pattern]
+
+    if sort_order_json_pattern is not None: # TODO: This needs to be changed as it is dependent on glob order
+        if "*" in sort_order_json_pattern:
+            sort_order_json_files = glob.glob(sort_order_json_pattern)
+        else:
+            sort_order_json_files = [sort_order_json_pattern]
+
 
     with open(data_template_json, "r") as f:
         data_template_dict = json.load(f)
 
-    if sort_order_json is not None:
-        with open(sort_order_json) as f:
-            sort_order_list = json.load(f)
-    else:
-        sort_order_list = None
+    if output_directory is None:
+        output_directory = os.path.abspath(os.path.split(data_json_files[0])[0])
 
-    data_template_dict = expand_template_dict(data_dict, data_template_dict)
-    data_translate_dict = build_translation_dict(data_dict, data_template_dict)
-    data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
+    data_translate_dict_json_name = os.path.join(output_directory, hdf5_base_name + "_data_template.json")
 
-    print("Generated data template:\n")
-    # with open("data_translate_dict.json", "w") as fw:
-    #     json.dump(data_translate_dict, fw, indent=4, separators=(',', ': '))
+    if refresh_template:
+        if not os.path.exists(data_translate_dict_json_name):
+            data_template_dict = expand_template_dict(data_json_files, data_template_dict)
+            data_translate_dict = build_translation_dict(data_json_files, data_template_dict)
+            data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
 
-    pprint.pprint(data_translate_dict)
-    f5p = h5py.File(hdf5_file_name, "w")
+            print("Generated data template:\n")
+            with open(data_translate_dict_json_name, "w") as fw:
+                 json.dump(data_translate_dict, fw, indent=4, separators=(',', ': '))
 
-    build_hdf5_matrix(f5p, data_dict, data_translate_dict, sort_order_list)
+    with open(data_translate_dict_json_name, "r") as fj:
+        data_translate_dict = json.load(fj)
 
+    generated_hdf5_file_names = []
+    ks = 0
+    for data_json_file in data_json_files:
+        number = data_json_file.split("_")[-2]  # TODO: This needs to be changed as it is dependent on filename
+        hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + number + "_" + ".hdf5")
+        generated_hdf5_file_names += [hdf5_file_name]
+
+        with open(data_json_file, "r") as fj:
+            data_dict = json.load(fj)
+            f5p = h5py.File(hdf5_file_name, "w")
+            if sort_order_json_pattern is not None:
+                sort_order_json = sort_order_json_files[ks]
+                with open(sort_order_json) as f:
+                    sort_order_list = json.load(f)
+            else:
+                sort_order_list = None
+
+            build_hdf5_matrix(f5p, data_dict, data_translate_dict, sort_order_list)
+            ks += 1
 
 if __name__ == "__main__":
 
