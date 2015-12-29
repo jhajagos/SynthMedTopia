@@ -40,6 +40,10 @@ encounters = [(1000, 10, "050", "M", 30, 1),
               (1001, 10, "051", "M", 30, 28),
               (1003, 11, "288", "F", 20, 10),
               (1005, 50, "001", "U", 85, 15),
+              (1009, 50, "001", "U", 85, 15),
+              (1010, 50, "001", "U", 85, 15),
+              (999, 22, "002", "U",  85, 15),
+              (20000, 22, "002", "U",  85, 15),
               ]
 
 diagnoses = [
@@ -87,14 +91,40 @@ class TestDBMappingJSON(unittest.TestCase):
             connection.execute(laboratory_tests_obj.insert(lab_test))
         connection.close()
 
-    def test_json_mapping(self):
+    def test_json_mapping_split_file(self):
 
-        mapping_json, order_json = build_document_mapping_from_db.main_json("test_mapping_document.json", "runtime_config_test.json")
+        mapping_jsons, order_json = build_document_mapping_from_db.main_json("test_mapping_document.json", "runtime_config_test_split.json")
 
-        with open(mapping_json, "r") as f:
+        mapping_json_one = mapping_jsons[0]
+        mapping_json_two = mapping_jsons[1]
+
+        with open(mapping_json_one, "r") as f:
             mapping_dict = json.load(f)
-            self.assertEquals(len(mapping_dict), 4)
-            keys = ['1005', '1003', '1001', '1000']
+            self.assertEquals(len(mapping_dict), 5)
+            keys = ['999', '1005', '1003', '1001', '1000']
+
+            for key in keys:
+                self.assertTrue(key in mapping_dict.keys())
+
+
+        with open(mapping_json_two, "r") as f:
+            mapping_dict = json.load(f)
+            self.assertEquals(len(mapping_dict), 3)
+            keys = ['1009', '1010', '20000']
+
+            for key in keys:
+                self.assertTrue(key in mapping_dict.keys())
+
+    def test_json_mapping_one_file(self):
+
+        mapping_jsons, order_json = build_document_mapping_from_db.main_json("test_mapping_document.json", "runtime_config_test.json")
+
+        mapping_json_one = mapping_jsons[0]
+
+        with open(mapping_json_one, "r") as f:
+            mapping_dict = json.load(f)
+            self.assertEquals(len(mapping_dict), 8)
+            keys = ['999', '1005', '1003', '1001', '1000', '1009', '1010', '20000']
 
             for key in keys:
                 self.assertTrue(key in mapping_dict.keys())

@@ -11,6 +11,7 @@ import sys
 def generate_date_stamp():
     return time.strftime("%Y%m%d", time.gmtime())
 
+
 def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest, field_class_name,
                                                          transaction_id_field="transaction_id"):
 
@@ -240,6 +241,8 @@ def main(configuration):
         transactions_of_interest += [transaction_id]
         i += 1
 
+    sorted_transactions_of_interest = sorted(transactions_of_interest)
+
     if schema is not None:
         transactions_of_interest_table = "%s.tmp_transactions_of_interest" % schema
     else:
@@ -247,7 +250,10 @@ def main(configuration):
 
     drop_table_if_exists = "drop table if exists %s" % transactions_of_interest_table
     create_table_sql = "create table %s" % transactions_of_interest_table
-    create_table_sql += " (transaction_id int8)" #TODO: Get transaction id in correct format
+    create_table_sql += " (transaction_id int8)"  # TODO: Get transaction id in correct format
+
+
+    n_transactions = len(transactions_of_interest)
 
     if refresh_transactions_table:
         execute_and_print(connection, drop_table_if_exists)
@@ -266,62 +272,98 @@ def main(configuration):
         index_query = "create unique index idx_tmp_toi on %s(transaction_id)" % transactions_of_interest_table
         execute_and_print(connection, index_query)
 
-    print("Extracting features")
-    query_wrapper = 'select zzz.* from (%s) zzz join %s yyy on zzz."' + transaction_id_field + '"' +' = yyy.transaction_id'
+    if "batch_size" in runtime_config["source_db_config"]:
+        batch_size = runtime_config["source_db_config"]["batch_size"]
+    else:
+        batch_size = n_transactions
 
-    mappings = configuration["mapping_config"]["mappings"]
+    batch_sizes_list = []
 
-    for transaction_id in transactions_of_interest:
-        transaction_dict = {}
+    number_of_batches = n_transactions // batch_size
+    if n_transactions % batch_size > 0:
+        number_of_batches += 1
+
+    for i in range(number_of_batches):
+        start_i = i * batch_size
+        end_i = start_i + batch_size - 1
+        if end_i > (n_transactions - 1):
+            end_i = n_transactions - 1
+
+        batch_sizes_list += [(start_i, end_i)]
+
+    b = 0
+    output_file_names_list = []
+    for batch_indices in batch_sizes_list:
+        results_dict = {}
+        b += 1
+        print("Batch %s / %s" % (b, number_of_batches))
+
+        print("Extracting features")
+        query_wrapper = 'select zzz.* from (%s) zzz join %s yyy on zzz."' + transaction_id_field + '"' +' = yyy.transaction_id'
+        query_wrapper += ' and yyy.transaction_id between %s and %s' % (sorted_transactions_of_interest[batch_indices[0]], sorted_transactions_of_interest[batch_indices[1]])
+
+        mappings = configuration["mapping_config"]["mappings"]
+
+        for transaction_id in sorted_transactions_of_interest[batch_indices[0]:batch_indices[1] + 1]:
+            transaction_dict = {}
+            for mapping in mappings:
+                current_dict = transaction_dict
+                for part in mapping["path"]:
+                    if part in current_dict:
+                        pass
+                    else:
+                        current_dict[part] = {}
+
+                    current_dict = current_dict[part]
+                current_dict[mapping["name"]] = None
+            results_dict[transaction_id] = transaction_dict
+
         for mapping in mappings:
-            current_dict = transaction_dict
-            for part in mapping["path"]:
-                if part in current_dict:
-                    pass
-                else:
-                    current_dict[part] = {}
-
-                current_dict = current_dict[part]
-            current_dict[mapping["name"]] = None
-        results_dict[transaction_id] = transaction_dict
-
-    for mapping in mappings:
-        if schema is not None:
-            mapping_table_name = schema + "." + '"%s"' % mapping["table_name"]
-        else:
-            mapping_table_name = '"%s"' % mapping["table_name"]
-
-        mapping_query = "select * from %s" % mapping_table_name
-        if "fields_to_order_by" in mapping and mapping["fields_to_order_by"] is not None:
-            mapping_query += " order by "
-            for field in mapping["fields_to_order_by"]:
-                mapping_query += ' "%s",' % field
-            mapping_query = mapping_query[:-1]
-
-        rs = execute_and_print(connection, query_wrapper % (mapping_query, transactions_of_interest_table))
-
-        if mapping["type"] in ["one-to-one", "one-to-many"]:
-            mapping_result_dict = build_dict_based_on_transaction_id_query(rs, mapping["fields_to_include"], transaction_id_field)
-        else:
-            mapping_result_dict = build_dict_based_on_transaction_id_multi_class_query(rs, mapping["fields_to_include"], mapping["group_by_field"], transaction_id_field)
-
-        for transaction_id in mapping_result_dict:
-            result_dict_to_align = mapping_result_dict[transaction_id]
-
-            if mapping["type"] == "one-to-one":
-                 result_dict_to_align = mapping_result_dict[transaction_id][0]
+            if schema is not None:
+                mapping_table_name = schema + "." + '"%s"' % mapping["table_name"]
             else:
-                 result_dict_to_align = mapping_result_dict[transaction_id]
-            # Align to other transactions
-            if transaction_id in results_dict:
-                result_dict = results_dict[transaction_id]
-                current_dict = result_dict
-                for path in mapping["path"]:
-                    current_dict = current_dict[path]
+                mapping_table_name = '"%s"' % mapping["table_name"]
 
-                current_dict[mapping["name"]] = result_dict_to_align
+            mapping_query = "select * from %s" % mapping_table_name
+            if "fields_to_order_by" in mapping and mapping["fields_to_order_by"] is not None:
+                mapping_query += " order by "
+                for field in mapping["fields_to_order_by"]:
+                    mapping_query += ' "%s",' % field
+                mapping_query = mapping_query[:-1]
 
-    #Write out order of keys
+            rs = execute_and_print(connection, query_wrapper % (mapping_query, transactions_of_interest_table))
+
+            if mapping["type"] in ["one-to-one", "one-to-many"]:
+                mapping_result_dict = build_dict_based_on_transaction_id_query(rs, mapping["fields_to_include"], transaction_id_field)
+            else:
+                mapping_result_dict = build_dict_based_on_transaction_id_multi_class_query(rs, mapping["fields_to_include"], mapping["group_by_field"], transaction_id_field)
+
+            for transaction_id in mapping_result_dict:
+                result_dict_to_align = mapping_result_dict[transaction_id]
+
+                if mapping["type"] == "one-to-one":
+                     result_dict_to_align = mapping_result_dict[transaction_id][0]
+                else:
+                     result_dict_to_align = mapping_result_dict[transaction_id]
+                # Align to other transactions
+                if transaction_id in results_dict:
+                    result_dict = results_dict[transaction_id]
+                    current_dict = result_dict
+                    for path in mapping["path"]:
+                        current_dict = current_dict[path]
+
+                    current_dict[mapping["name"]] = result_dict_to_align
+
+        # Write dictionary out
+        if results_dict_class is None:
+            output_file_name = os.path.join(data_directory, base_file_name + "_" + str(b) + "_" + generate_date_stamp() + ".json")
+            output_file_names_list += [output_file_name]
+            print('Writing JSON file "%s"' % output_file_name)
+            with open(output_file_name, "w") as fw:
+                json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+     #Write out order of keys
     output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + "key_order_" + generate_date_stamp() + ".json")
     transactions_of_interest_str = [str(x) for x in transactions_of_interest]
     print("")
@@ -329,14 +371,7 @@ def main(configuration):
     with open(output_key_order_file_name, "w") as fw:
         json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
 
-    #Write dictionary out
-    if results_dict_class is None:
-        output_file_name = os.path.join(data_directory, base_file_name + "_" + generate_date_stamp() + ".json")
-        print('Writing JSON file "%s"' % output_file_name)
-        with open(output_file_name, "w") as fw:
-            json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
-
-        return output_file_name, output_key_order_file_name
+    return output_file_names_list, output_key_order_file_name
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
