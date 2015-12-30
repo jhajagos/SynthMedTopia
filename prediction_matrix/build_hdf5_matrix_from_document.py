@@ -452,9 +452,6 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
 def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_template=True, output_directory=None):
     """Convert a JSON file to a HDF5 matrix format using a template"""
 
-    with open(data_template_json, "r") as f:
-        data_template_dict = json.load(f)
-
     with open(batch_json_file_name) as fj:
         batch_list_dict = json.load(fj)
 
@@ -482,6 +479,9 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
         with open(data_json_file, "r") as fj:
             data_dict = json.load(fj)
 
+            with open(data_template_json, "r") as f:
+                data_template_dict = json.load(f)
+
             data_template_dict = expand_template_dict(data_dict, data_template_dict)
             data_translate_dict = build_translation_dict(data_dict, data_template_dict)
             data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
@@ -500,6 +500,8 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
                 sort_order_list = None
 
             build_hdf5_matrix(f5p, data_dict, data_translate_dict, sort_order_list)
+
+
             ks += 1
 
 if __name__ == "__main__":
