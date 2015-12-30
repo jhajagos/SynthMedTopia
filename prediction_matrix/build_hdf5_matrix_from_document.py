@@ -449,6 +449,98 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
             column_data_set[...] = column_annotations
 
 
+def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
+    """Merge two list translations dicts together"""
+    if len(data_translate_dict_1) == 0:
+        return data_translate_dict_2
+    else:
+        if len(data_translate_dict_1) == len(data_translate_dict_2):
+
+            merged_data_translate_dict = []
+
+            for i in range(len(data_translate_dict_1)):
+
+                merged_item_dict = {}
+                item_dict_1 = data_translate_dict_1[i]
+                item_dict_2 = data_translate_dict_2[i]
+
+                for key in item_dict_1:
+                    if key not in ('variables',):
+                        merged_item_dict[key] = item_dict_1[key]
+
+
+                if "variables" in item_dict_1:
+
+                    variables_1 = item_dict_1["variables"]
+                    variables_2 = item_dict_2["variables"]
+                    running_offset = 0
+                    merged_variables = []
+
+                    for j in range(len(variables_1)):
+                        variable_1 = variables_1[j]
+                        variable_2 = variables_2[j]
+                        new_variable = {}
+                        if "position_map" not in variable_1:
+                            for key in variable_1:
+                                new_variable[key] = variable_1[key]
+                            running_offset += 1
+
+                        else:
+                            new_variable, running_offset = remap_position_map(variable_1, variable_2, new_variable, running_offset)
+
+                        merged_variables += [new_variable]
+
+                    merged_item_dict["variables"] = merged_variables
+                else:
+                    merged_item_dict, running_offset = remap_position_map(item_dict_1, item_dict_2, merged_item_dict, 0)
+
+                merged_data_translate_dict += [merged_item_dict]
+
+            return merged_data_translate_dict
+
+        else:
+            raise RuntimeError, "Translations dictionaries are of different length"
+
+
+def remap_position_map(variable_1, variable_2, new_variable, running_offset):
+    # Merge dicts
+    for key in variable_1:
+        if key not in ("n_categories", "offset_start", "offset_end"):
+            key_variable_1_value = variable_1[key]
+            key_variable_2_value = variable_2[key]
+
+            if key_variable_1_value.__class__ != {}.__class__:
+                new_variable[key] = key_variable_1_value
+
+            else:
+
+                merged_dict = {}
+                for item_key in key_variable_1_value:
+                    merged_dict[item_key] = key_variable_1_value[item_key]
+
+                for item_key in key_variable_2_value:
+                    if item_key not in merged_dict:
+                        merged_dict[item_key] = key_variable_2_value[item_key]
+
+                if key == "position_map":
+                    new_values = [kk for kk in merged_dict]
+
+                    new_values.sort()
+                    new_position_map_dict = {}
+                    for l in range(len(new_values)):
+                        new_position_map_dict[new_values[l]] = l
+
+                    new_variable["position_map"] = new_position_map_dict
+                    new_variable["n_categories"] = len(new_position_map_dict)
+                    new_variable["offset_start"] = running_offset
+                    new_variable["offset_end"] = new_variable["offset_start"] + new_variable["n_categories"]
+                    running_offset = new_variable["offset_end"] + 1
+
+                else:
+                    new_variable[key] = merged_dict
+    return new_variable, running_offset
+
+
 def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_template=True, output_directory=None):
     """Convert a JSON file to a HDF5 matrix format using a template"""
 
@@ -469,12 +561,10 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
     if output_directory is None:
         output_directory = os.path.abspath(os.path.split(data_json_files[0])[0])
 
-    generated_hdf5_file_names = []
+    generated_data_templates_names = []
     ks = 0
     for data_json_file in data_json_files:
         batch_number = batch_ids[ks]
-        hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + ".hdf5")
-        generated_hdf5_file_names += [hdf5_file_name]
 
         with open(data_json_file, "r") as fj:
             data_dict = json.load(fj)
@@ -487,11 +577,38 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
             data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
             data_translate_dict_json_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + "_data_template.json")
 
+            generated_data_templates_names += [data_translate_dict_json_name]
+
             with open(data_translate_dict_json_name, "w") as fjw:
-                json.dump(data_translate_dict, fjw, indent=4, separators=(", ", ": "))
+                json.dump(data_translate_dict, fjw, indent=4, separators=(", ", ": "), sort_keys=True)
+
+            ks += 1
+
+
+    master_data_translate_dict = []
+    for data_template_name in generated_data_templates_names:
+
+        with open(data_template_name) as fj:
+            data_translate_dict = json.load(fj)
+
+            master_data_translate_dict = merge_data_translate_dicts(master_data_translate_dict, data_translate_dict)
+
+    master_data_translate_dict_name = os.path.join(output_directory, hdf5_base_name  + "_master_data_template.json")
+    with open(master_data_translate_dict_name, "w") as fjw:
+        json.dump(master_data_translate_dict, fjw, indent=4, separators=(", ", ": "), sort_keys=True)
+
+    generated_hdf5_file_names = []
+    ks = 0
+    for data_json_file in data_json_files:
+        batch_number = batch_ids[ks]
+
+        with open(data_json_file, "r") as fj:
+            data_dict = json.load(fj)
+
+            hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + ".hdf5")
+            generated_hdf5_file_names += [hdf5_file_name]
 
             f5p = h5py.File(hdf5_file_name, "w")
-
             if batch_number in sort_order_dict:
                 sort_order_json_name = sort_order_dict[batch_number]
                 with open(sort_order_json_name, "r") as fj:
@@ -499,10 +616,9 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
             else:
                 sort_order_list = None
 
-            build_hdf5_matrix(f5p, data_dict, data_translate_dict, sort_order_list)
+            build_hdf5_matrix(f5p, data_dict, master_data_translate_dict, sort_order_list)
 
-
-            ks += 1
+        ks += 1
 
 if __name__ == "__main__":
 
