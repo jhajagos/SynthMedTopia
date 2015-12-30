@@ -6,5 +6,9 @@
   {
   "batch_id": 2,
   "data_json_file": "./fake_inpatient_readmission_data_2.json"
+  },
+  {
+  "batch_id": 3,
+  "data_json_file": "./fake_inpatient_readmission_data_3.json"
   }
 ]

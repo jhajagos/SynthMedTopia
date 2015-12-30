@@ -7,6 +7,10 @@
          {
           "cell_value": "gender",
           "type": "categorical"
+         },
+         {
+          "cell_value": "emergency",
+          "type": "categorical"
          }
      ],
      "type": "variables"

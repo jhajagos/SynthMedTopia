@@ -457,7 +457,6 @@ def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
         if len(data_translate_dict_1) == len(data_translate_dict_2):
 
             merged_data_translate_dict = []
-
             for i in range(len(data_translate_dict_1)):
 
                 merged_item_dict = {}
@@ -468,18 +467,62 @@ def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
                     if key not in ('variables',):
                         merged_item_dict[key] = item_dict_1[key]
 
-
                 if "variables" in item_dict_1:
-
                     variables_1 = item_dict_1["variables"]
                     variables_2 = item_dict_2["variables"]
                     running_offset = 0
                     merged_variables = []
 
-                    for j in range(len(variables_1)):
-                        variable_1 = variables_1[j]
-                        variable_2 = variables_2[j]
+                    if "name" in variables_1[0]:
+
+                        variable_1_name_dict = {}
+                        variable_2_name_dict = {}
+
+                        for ii in range(len(variables_1)):
+                            var_name = variables_1[ii]["name"]
+                            variable_1_name_dict[var_name] = ii
+
+                        for ii in range(len(variables_2)):
+                            var_name = variables_2[ii]["name"]
+                            variable_2_name_dict[var_name] = ii
+
+                        all_variable_names = []
+                        for var_name in variable_1_name_dict:
+                            if var_name not in all_variable_names:
+                                all_variable_names += [var_name]
+
+                        for var_name in variable_2_name_dict:
+                            if var_name not in all_variable_names:
+                                all_variable_names += [var_name]
+
+                        all_variable_names.sort()
+
+                        all_variables_merged_right_join = []
+
+                        for var_name in all_variable_names:
+                            if var_name in variable_1_name_dict:
+                                all_variables_merged_right_join += [variables_1[variable_1_name_dict[var_name]]]
+                            else:
+                                all_variables_merged_right_join += [variables_2[variable_2_name_dict[var_name]]]
+
+                        n_variables = len(all_variables_merged_right_join)
+
+                    else:
+                        n_variables = len(variables_1)
+
+                    for j in range(n_variables):
+                        if "name" in variables_1[0]:
+                            variable_1 = all_variables_merged_right_join[j]
+                            if all_variable_names[j] not in variable_2_name_dict:
+                                variable_2 = variable_1
+                            else:
+                                variable_2 = variables_2[variable_2_name_dict[all_variable_names[j]]]
+                        else:
+                            variable_1 = variables_1[j]
+                            variable_2 = variables_2[j]
+
                         new_variable = {}
+
                         if "position_map" not in variable_1:
                             for key in variable_1:
                                 new_variable[key] = variable_1[key]
@@ -534,7 +577,7 @@ def remap_position_map(variable_1, variable_2, new_variable, running_offset):
                     new_variable["n_categories"] = len(new_position_map_dict)
                     new_variable["offset_start"] = running_offset
                     new_variable["offset_end"] = new_variable["offset_start"] + new_variable["n_categories"]
-                    running_offset = new_variable["offset_end"] + 1
+                    running_offset = new_variable["offset_end"]
 
                 else:
                     new_variable[key] = merged_dict
