@@ -382,7 +382,6 @@ def main(configuration):
         with open(json_batch_file, "w") as fwj:
             json.dump(batch_results_list_dict, fwj, sort_keys=True, indent=4, separators=(',', ': '))
 
-
     return output_file_names_list, output_key_order_file_list
 
 if __name__ == "__main__":
