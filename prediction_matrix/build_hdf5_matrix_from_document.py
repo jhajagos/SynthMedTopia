@@ -526,6 +526,9 @@ def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
                         if "position_map" not in variable_1:
                             for key in variable_1:
                                 new_variable[key] = variable_1[key]
+                            new_variable["offset_start"] = running_offset
+                            new_variable["offset_end"] = running_offset + 1
+
                             running_offset += 1
 
                         else:
