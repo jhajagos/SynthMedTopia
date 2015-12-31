@@ -67,10 +67,10 @@ class TestDBMappingJSON(unittest.TestCase):
 
     def setUp(self):
 
-        if os.path.exists("./test_db.db3"):
-            os.remove("./test_db.db3")
+        if os.path.exists("./test/test_db.db3"):
+            os.remove("./test/test_db.db3")
 
-        engine = sa.create_engine("sqlite:///test_db.db3")
+        engine = sa.create_engine("sqlite:///./test/test_db.db3")
         connection = engine.connect()
 
         for statement in schema.split(";"):
@@ -93,7 +93,7 @@ class TestDBMappingJSON(unittest.TestCase):
 
     def test_json_mapping_split_file(self):
 
-        mapping_jsons, order_json = build_document_mapping_from_db.main_json("test_mapping_document.json", "runtime_config_test_split.json")
+        mapping_jsons, order_json = build_document_mapping_from_db.main_json("./test/test_mapping_document.json", "./test/runtime_config_test_split.json")
 
         mapping_json_one = mapping_jsons[0]
         mapping_json_two = mapping_jsons[1]
@@ -117,7 +117,7 @@ class TestDBMappingJSON(unittest.TestCase):
 
     def test_json_mapping_one_file(self):
 
-        mapping_jsons, order_json = build_document_mapping_from_db.main_json("test_mapping_document.json", "runtime_config_test.json")
+        mapping_jsons, order_json = build_document_mapping_from_db.main_json("./test/test_mapping_document.json", "./test/runtime_config_test.json")
 
         mapping_json_one = mapping_jsons[0]
 

@@ -1,13 +1,13 @@
 {
   "source_db_config": {
-    "connection_string": "sqlite:///test_db.db3",
+    "connection_string": "sqlite:///./test/test_db.db3",
     "limit": null,
     "refresh_transactions_table": 1,
     "batch_size": 5
   },
   "json_file_config": {
      "base_file_name": "transactions_split",
-     "data_directory": "./"
+     "data_directory": "./test/"
   },
   "mongo_db_config": {
     "connection_string": "mongodb://localhost",
