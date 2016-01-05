@@ -587,10 +587,94 @@ def remap_position_map(variable_1, variable_2, new_variable, running_offset):
     return new_variable, running_offset
 
 
+def get_all_paths(h5py_group):
+    """Recurse and get all non-groups"""
+    non_groups = []
+    for group_name in h5py_group:
+        if not h5py_group[group_name].__class__ == h5py_group.__class__:
+            non_groups += [h5py_group[group_name].name]
+        else:
+            non_groups.extend(get_all_paths(h5py_group[group_name]))
+
+    if len(non_groups):
+        return non_groups
+
+
+def copy_data_set(h5p1, h5p2, path, compression="gzip"):
+
+    ds1 = h5p1[path]
+    source_shape = ds1.shape
+    source_dtype = ds1.dtype
+
+    ds2 = h5p2.create_dataset(path, shape=source_shape, dtype=source_dtype, compression=compression)
+    ds2[...] = ds1[...]
+
+def create_dataset_with_new_number_of_rows(h5p1, h5p2, path, new_number_rows, compression="gzip"):
+    ds1 = h5p1[path]
+    source_dtype = ds1.dtype
+
+    updated_shape = (new_number_rows, ds1.shape[1])
+    ds2 = h5p2.create_dataset(path, shape=updated_shape, dtype=source_dtype, compression=compression)
+    return ds2
+
+def copy_into_dataset_starting_at(ds1, h5p2, path, starting_position):
+    ds2 = h5p2[path]
+    ds2_shape = ds2.shape
+    ds2_rows = ds2_shape[0]
+    ending_position = starting_position + ds2_rows
+
+    ds1[starting_position : ending_position] = ds2[...]
+    return ending_position
+
+
+
+def combine_exported_hdf5_files_into_single_file(h5p_master, hdf5_files, total_row_count):
+
+    core_array_list = []
+    annotations_arrays = []
+
+    h5template = h5py.File(hdf5_files[0], "r")
+
+    path_list = get_all_paths(h5template["/"])
+
+    for path in path_list:
+        if path.split("/")[-1] == "core_array":
+            core_array_list += [path]
+        else:
+            annotations_arrays += [path]
+
+    for annotations_array in annotations_arrays:
+        copy_data_set(h5template, h5p_master, annotations_array)
+
+
+    core_array_path_dict = {}
+    core_array_path_position = {}
+    for core_array_path in core_array_list:
+        new_core_data_set = create_dataset_with_new_number_of_rows(h5template, h5p_master, core_array_path, total_row_count)
+        core_array_path_dict[core_array_path] = new_core_data_set
+        core_array_path_position[core_array_path] = 0
+
+    for hdf5_file_name in hdf5_files:
+
+        print("Copying '%s'" % hdf5_file_name)
+
+        h5pc = h5py.File(hdf5_file_name, "r")
+
+        for core_array_path in core_array_path_dict:
+            ds1 = core_array_path_dict[core_array_path]
+
+            new_starting_position = copy_into_dataset_starting_at(ds1, h5pc, core_array_path, core_array_path_position[core_array_path])
+            print(new_starting_position)
+            core_array_path_position[core_array_path] = new_starting_position
+
+            # print(hdf5_file_name, core_array_path)
+            # print(h5p_master[core_array_path][...])
+
+
 def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_template=True, output_directory=None):
     """Convert a JSON file to a HDF5 matrix format using a template"""
 
-    with open(batch_json_file_name) as fj:
+    with open(batch_json_file_name) as fj:  # Load names of files to process
         batch_list_dict = json.load(fj)
 
     data_json_files = [x["data_json_file"] for x in batch_list_dict]
@@ -609,7 +693,7 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
     generated_data_templates_names = []
     ks = 0
-    for data_json_file in data_json_files:
+    for data_json_file in data_json_files:  # For each subset generate a template
         batch_number = batch_ids[ks]
 
         with open(data_json_file, "r") as fj:
@@ -630,9 +714,8 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
             ks += 1
 
-
     master_data_translate_dict = []
-    for data_template_name in generated_data_templates_names:
+    for data_template_name in generated_data_templates_names:  # Combine templates into a single master template
 
         with open(data_template_name) as fj:
             data_translate_dict = json.load(fj)
@@ -645,11 +728,13 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
     generated_hdf5_file_names = []
     ks = 0
-    for data_json_file in data_json_files:
+    total_number_of_rows = 0
+    for data_json_file in data_json_files:  # Export each subset into a HDF5 matrix
         batch_number = batch_ids[ks]
 
         with open(data_json_file, "r") as fj:
             data_dict = json.load(fj)
+            total_number_of_rows += len(data_dict)
 
             hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + ".hdf5")
             generated_hdf5_file_names += [hdf5_file_name]
@@ -666,6 +751,15 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
         ks += 1
 
+
+    print("Exported %s rows across %s files" % (total_number_of_rows, len(data_json_files)))
+
+    all_hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_combined.hdf5")
+    combined_hdf5 = h5py.File(all_hdf5_file_name, "w")
+
+    combine_exported_hdf5_files_into_single_file(combined_hdf5, generated_hdf5_file_names, total_number_of_rows)
+
+
 if __name__ == "__main__":
 
     if len(sys.argv) == 4:
@@ -675,4 +769,4 @@ if __name__ == "__main__":
     elif len(sys.argv) == 2 and sys.argv[1] == "help":
         print("Usage: python build_hdf5_matrix_from_document.py data_file_base_name batch_dict.json data_template.json")
     else:
-        main("matrix_build", "test_simple_batch.json", "configuration_to_build_matrix.json")
+        main("matrix_build", "./test/test_simple_batch.json", "./test/configuration_to_build_matrix.json")
