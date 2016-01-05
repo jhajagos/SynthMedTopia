@@ -656,7 +656,7 @@ def combine_exported_hdf5_files_into_single_file(h5p_master, hdf5_files, total_r
 
     for hdf5_file_name in hdf5_files:
 
-        print("Copying '%s'" % hdf5_file_name)
+        print("Inserting contents of '%s'" % hdf5_file_name)
 
         h5pc = h5py.File(hdf5_file_name, "r")
 
@@ -664,7 +664,7 @@ def combine_exported_hdf5_files_into_single_file(h5p_master, hdf5_files, total_r
             ds1 = core_array_path_dict[core_array_path]
 
             new_starting_position = copy_into_dataset_starting_at(ds1, h5pc, core_array_path, core_array_path_position[core_array_path])
-            print(new_starting_position)
+            #print(new_starting_position)
             core_array_path_position[core_array_path] = new_starting_position
 
             # print(hdf5_file_name, core_array_path)
