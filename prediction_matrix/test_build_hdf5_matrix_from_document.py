@@ -79,21 +79,27 @@ class RunHDF5Mapping(unittest.TestCase):
 
         lab_category_count_c = f5c["/independent/classes/lab/category/core_array"][...]
 
+        # Concatenate to create a single file
         lab_category_count_cs = np.concatenate((lab_category_count_1, lab_category_count_2, lab_category_count_3))
 
         self.assertEquals(lab_category_count_c.shape, lab_category_count_cs.shape)
+        self.assertEquals(np.sum(lab_category_count_c), np.sum(lab_category_count_cs))
 
-        self.assertEquals(np.sum(lab_category_count_c),np.sum(lab_category_count_cs))
+        # Read the combined file
+        f5ca = h5py.File("./test/transaction_test_split_combined.hdf5", "r")
+        lab_category_count_ca = f5ca["/independent/classes/lab/category/core_array"][...]
 
-        print(np.sum(lab_category_count_c))
+        self.assertEqual(lab_category_count_c.shape, lab_category_count_ca.shape)
+        self.assertEquals(np.sum(lab_category_count_c), np.sum(lab_category_count_ca))
+
+        # print(np.sum(lab_category_count_c))
 
         # TODO write test that the two printed matrices are equal
-        import pprint
-        pprint.pprint(lab_category_count_c.tolist())
-        pprint.pprint(lab_category_count_cs.tolist())
+        # import pprint
+        # pprint.pprint(lab_category_count_c.tolist())
+        # pprint.pprint(lab_category_count_cs.tolist())
 
         #self.assertEquals(lab_category_count_c.tolist(), lab_category_count_cs.tolist())
-
 
 
 if __name__ == '__main__':
