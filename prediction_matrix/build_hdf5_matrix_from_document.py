@@ -376,12 +376,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                 if list_of_interest is not None:
 
                                     if filter_to_apply is not None:
-                                        # print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
-                                        # print(variable_dict)
-                                        # print(list_of_interest)
                                         list_of_interest = filter_list_of_interest(list_of_interest, filter_to_apply)
-                                        # print(list_of_interest)
-                                        # print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 
                                     if len(list_of_interest):
 
@@ -396,16 +391,18 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                                         if cell_value is not None:
                                                             process_list += [cell_value]
                                                         counter += 1
-                                                process_array = np.array(process_list)
-                                                if process == "median":
-                                                    median_value = np.median(process_array)
-                                                    core_array[i, offset_start] = median_value
-                                                elif process == "last_item":
-                                                    core_array[i, offset_start] = process_list[-1]
-                                                elif process == "first_item":
-                                                    core_array[i, offset_start] = process_list[0]
-                                                elif process == "count":
-                                                    core_array[i, offset_start] = counter # Handles None values
+
+                                                if len(process_list):
+                                                    process_array = np.array(process_list)
+                                                    if process == "median":
+                                                        median_value = np.median(process_array)
+                                                        core_array[i, offset_start] = median_value
+                                                    elif process == "last_item":
+                                                        core_array[i, offset_start] = process_list[-1]
+                                                    elif process == "first_item":
+                                                        core_array[i, offset_start] = process_list[0]
+                                                    elif process == "count":
+                                                        core_array[i, offset_start] = counter # Handles None values
 
                                         elif variable_type == 'categorical_list':
                                             if process == "count_categories":
