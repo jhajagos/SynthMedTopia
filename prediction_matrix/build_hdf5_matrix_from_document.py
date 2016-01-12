@@ -6,6 +6,22 @@ import numpy as np
 import pprint
 import sys
 import os
+import copy
+
+def filter_list_of_interest(list_to_filter, filter_to_apply):
+
+    new_filtered_list = []
+    #list_to_filter = copy.copy(list_to_filter)
+    filter_field = filter_to_apply["field"]
+    value_to_filter_on = filter_to_apply["value"]
+
+    for item in list_to_filter:
+        if filter_field in item:
+            value_of_item = item[filter_field]
+            if value_to_filter_on == value_of_item:
+                new_filtered_list += [item]
+
+    return new_filtered_list
 
 
 def get_entry_from_path(dict_with_path, path_list):
@@ -95,6 +111,7 @@ def generate_column_annotations_variables(variables_dict, column_annotations):
 
 def expand_template_dict(data_dict, template_list_dict):
     """Expand out to more detail based on encoded data in a data_dict"""
+
     new_templates = []
 
     for template_dict in template_list_dict:
@@ -107,7 +124,6 @@ def expand_template_dict(data_dict, template_list_dict):
 
         if template_type == "classes_templates":
             entry_classes = []
-
 
             for data_key in data_dict:
                 data = data_dict[data_key]
@@ -131,6 +147,7 @@ def expand_template_dict(data_dict, template_list_dict):
             new_templates += [new_template_dict]
 
     template_list_dict += new_templates
+
     return template_list_dict
 
 
@@ -183,7 +200,6 @@ def build_translation_dict(data_dict, template_list_dict):
                 if variable_type == "categorical":
                     description_dict = {}
                     label_dict = {}
-
 
                     for data_key in data_dict:
                         datum_dict = data_dict[data_key]
@@ -332,10 +348,14 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                     if "process" in variable_dict:
                         process = variable_dict["process"]
                         variable_name = variable_dict["name"]
-
                     else:
                         process = None
                         variable_name = None
+
+                    if "filter" in variable_dict:
+                        filter_to_apply = variable_dict["filter"]
+                    else:
+                        filter_to_apply = None
 
                     if "position_map" in variable_dict:
                         position_map = variable_dict["position_map"]
@@ -347,48 +367,61 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                         dict_of_interest = get_entry_from_path(datum_dict, path)
                         if dict_of_interest is not None:
 
-                            if (variable_name in dict_of_interest) or (dict_of_interest.__class__ == [].__class__):
+                            if (variable_name in dict_of_interest) or (dict_of_interest.__class__ == [].__class__): #  An embedded list
                                 if dict_of_interest.__class__ == {}.__class__:
                                     list_of_interest = dict_of_interest[variable_name]
                                 else:
                                     list_of_interest = dict_of_interest
 
                                 if list_of_interest is not None:
-                                    if variable_type == 'numeric_list':
 
-                                        if process in ("median", "count", "last_item"):
-                                            process_list = []
-                                            counter = 0
-                                            for item in list_of_interest:
-                                                if cell_value_field in item:
-                                                    cell_value = item[cell_value_field]
-                                                    if cell_value is not None:
-                                                        process_list += [cell_value]
-                                                    counter += 1
-                                            process_array = np.array(process_list)
-                                            if process == "median":
-                                                median_value = np.median(process_array)
-                                                core_array[i, offset_start] = median_value
-                                            elif process == "last_item":
-                                                core_array[i, offset_start] = process_list[-1]
-                                            elif process == "count":
-                                                core_array[i, offset_start] = counter # Handles None values
+                                    if filter_to_apply is not None:
+                                        # print("SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS")
+                                        # print(variable_dict)
+                                        # print(list_of_interest)
+                                        list_of_interest = filter_list_of_interest(list_of_interest, filter_to_apply)
+                                        # print(list_of_interest)
+                                        # print("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
 
-                                    elif variable_type == 'categorical_list':
-                                        if process == "count_categories":
-                                            for item in list_of_interest:
-                                                if cell_value_field in item:
-                                                    cell_value = item[cell_value_field]
-                                                    if cell_value is not None:
-                                                        position = position_map[str(cell_value)]
-                                                        core_array[i, offset_start + position] += 1
+                                    if len(list_of_interest):
+
+                                        if variable_type == 'numeric_list':
+
+                                            if process in ("median", "count", "last_item", "first_item"):
+                                                process_list = []
+                                                counter = 0
+                                                for item in list_of_interest:
+                                                    if cell_value_field in item:
+                                                        cell_value = item[cell_value_field]
+                                                        if cell_value is not None:
+                                                            process_list += [cell_value]
+                                                        counter += 1
+                                                process_array = np.array(process_list)
+                                                if process == "median":
+                                                    median_value = np.median(process_array)
+                                                    core_array[i, offset_start] = median_value
+                                                elif process == "last_item":
+                                                    core_array[i, offset_start] = process_list[-1]
+                                                elif process == "first_item":
+                                                    core_array[i, offset_start] = process_list[0]
+                                                elif process == "count":
+                                                    core_array[i, offset_start] = counter # Handles None values
+
+                                        elif variable_type == 'categorical_list':
+                                            if process == "count_categories":
+                                                for item in list_of_interest:
+                                                    if cell_value_field in item:
+                                                        cell_value = item[cell_value_field]
+                                                        if cell_value is not None:
+                                                            position = position_map[str(cell_value)]
+                                                            core_array[i, offset_start + position] += 1
 
                             if cell_value_field in dict_of_interest:
                                 field_value = dict_of_interest[cell_value_field]
                                 core_array[i, offset_start] = field_value
                         i += 1
 
-        elif template_type == "categorical_list": # position of item in the categorical list is coded
+        elif template_type == "categorical_list":  # position of item in the categorical list is coded
             if "process" in data_translate_dict:
                 process = data_translate_dict["process"]
             else:
@@ -609,6 +642,7 @@ def copy_data_set(h5p1, h5p2, path, compression="gzip"):
     ds2 = h5p2.create_dataset(path, shape=source_shape, dtype=source_dtype, compression=compression)
     ds2[...] = ds1[...]
 
+
 def create_dataset_with_new_number_of_rows(h5p1, h5p2, path, new_number_rows, compression="gzip"):
     ds1 = h5p1[path]
     source_dtype = ds1.dtype
@@ -616,6 +650,7 @@ def create_dataset_with_new_number_of_rows(h5p1, h5p2, path, new_number_rows, co
     updated_shape = (new_number_rows, ds1.shape[1])
     ds2 = h5p2.create_dataset(path, shape=updated_shape, dtype=source_dtype, compression=compression)
     return ds2
+
 
 def copy_into_dataset_starting_at(ds1, h5p2, path, starting_position):
     ds2 = h5p2[path]
@@ -625,7 +660,6 @@ def copy_into_dataset_starting_at(ds1, h5p2, path, starting_position):
 
     ds1[starting_position : ending_position] = ds2[...]
     return ending_position
-
 
 
 def combine_exported_hdf5_files_into_single_file(h5p_master, hdf5_files, total_row_count):

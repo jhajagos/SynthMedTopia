@@ -31,7 +31,23 @@ class RunHDF5Mapping(unittest.TestCase):
             with open(os.path.join(directory, "test_all_file_batch.json"), "w") as fjw:
                 json.dump([{"batch_id": 1, "data_json_file": new_data_file_name}], fjw, sort_keys=True, indent=4, separators=(',', ': '))
 
+    def test_filter_and_first_set(self):
+
+        directory = "./test/"
+        bhm.main("filter_test", "./test/test_single_file_batch.json", "./test/configuration_to_build_matrix.json")
+        f5 = h5py.File("./test/filter_test_1.hdf5",'r')
+
+        lab_first = f5["/independent/classes/lab/first/core_array"][...]
+        lab_first_day = f5["/independent/classes/lab/first_day/core_array"][...]
+
+
+        self.assertNotEqual(lab_first.tolist(), lab_first_day.tolist())
+
+
     def test_mapping_single_file(self):
+
+        if os.path.exists("./test/transaction_test_1.hdf5"):
+            os.remove("./test/transaction_test_1.hdf5")
 
         bhm.main("transaction_test", "./test/test_single_file_batch.json", "./test/configuration_to_build_matrix.json")
         f5 = h5py.File("./test/transaction_test_1.hdf5",'r')

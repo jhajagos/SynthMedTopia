@@ -245,24 +245,28 @@
                 "discharge": {
                     "admit_date": "2012-01-01",
                     "age": 50,
-                    "discharge_date": "2014-01-01",
+                    "discharge_date": "2012-01-05",
                     "gender": "M"
                 },
                 "lab": {
                     "BUN": [
                         {
+                            "day": 1,
                             "result_category": "high",
                             "value": 5
                         },
                         {
+                            "day": 1,
                             "result_category": "high",
                             "value": 5
                         },
                         {
+                            "day": 2,
                             "result_category": "high",
                             "value": 6
                         },
                         {
+                            "day": 5,
                             "result_category": "high",
                             "value": 4
                         }
@@ -317,24 +321,29 @@
                 "lab": {
                     "BUN": [
                         {
+                            "day": 2,
                             "result_category": "low",
                             "value": 1
                         },
                         {
+                            "day": 3,
                             "result_category": "high",
                             "value": 3
                         },
                         {
+                            "day": 4,
                             "result_category": "normal",
                             "value": 2
                         },
                         {
+                            "day": 4,
                             "result_category": "normal",
                             "value": 2
                         }
                     ],
                     "Troponin": [
                         {
+                            "day": 1,
                             "result_category": "extreme",
                             "value": 0.1
                         }
