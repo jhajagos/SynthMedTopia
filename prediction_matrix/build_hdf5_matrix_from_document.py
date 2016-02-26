@@ -1,17 +1,16 @@
 __author__ = 'janos'
 
+from utility_prediction import *
 import json
 import h5py
 import numpy as np
-import pprint
 import sys
 import os
-import copy
+
 
 def filter_list_of_interest(list_to_filter, filter_to_apply):
-
+    """Filter an embedded list with a simple value check {"field": "sequence_id", "value": 1}"""
     new_filtered_list = []
-    #list_to_filter = copy.copy(list_to_filter)
     filter_field = filter_to_apply["field"]
     value_to_filter_on = filter_to_apply["value"]
 
@@ -20,7 +19,6 @@ def filter_list_of_interest(list_to_filter, filter_to_apply):
             value_of_item = item[filter_field]
             if value_to_filter_on == value_of_item:
                 new_filtered_list += [item]
-
     return new_filtered_list
 
 
@@ -60,7 +58,6 @@ def generate_column_annotations_categorical_list(categorical_list_dict, column_a
         column_annotations[1, i] = value.encode("ascii", errors="replace")
         if description is not None:
             column_annotations[2, i] = description.encode("ascii", errors="replace")
-
     return column_annotations
 
 
@@ -113,7 +110,6 @@ def expand_template_dict(data_dict, template_list_dict):
     """Expand out to more detail based on encoded data in a data_dict"""
 
     new_templates = []
-
     for template_dict in template_list_dict:
         template_type = template_dict["type"]
         path = template_dict["path"]
@@ -579,6 +575,7 @@ def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
 
 
 def remap_position_map(variable_1, variable_2, new_variable, running_offset):
+    """"""
     # Merge dicts
     for key in variable_1:
         if key not in ("n_categories", "offset_start", "offset_end"):
@@ -611,52 +608,9 @@ def remap_position_map(variable_1, variable_2, new_variable, running_offset):
                     new_variable["offset_start"] = running_offset
                     new_variable["offset_end"] = new_variable["offset_start"] + new_variable["n_categories"]
                     running_offset = new_variable["offset_end"]
-
                 else:
                     new_variable[key] = merged_dict
     return new_variable, running_offset
-
-
-def get_all_paths(h5py_group):
-    """Recurse and get all non-groups"""
-    non_groups = []
-    for group_name in h5py_group:
-        if not h5py_group[group_name].__class__ == h5py_group.__class__:
-            non_groups += [h5py_group[group_name].name]
-        else:
-            non_groups.extend(get_all_paths(h5py_group[group_name]))
-
-    if len(non_groups):
-        return non_groups
-
-
-def copy_data_set(h5p1, h5p2, path, compression="gzip"):
-
-    ds1 = h5p1[path]
-    source_shape = ds1.shape
-    source_dtype = ds1.dtype
-
-    ds2 = h5p2.create_dataset(path, shape=source_shape, dtype=source_dtype, compression=compression)
-    ds2[...] = ds1[...]
-
-
-def create_dataset_with_new_number_of_rows(h5p1, h5p2, path, new_number_rows, compression="gzip"):
-    ds1 = h5p1[path]
-    source_dtype = ds1.dtype
-
-    updated_shape = (new_number_rows, ds1.shape[1])
-    ds2 = h5p2.create_dataset(path, shape=updated_shape, dtype=source_dtype, compression=compression)
-    return ds2
-
-
-def copy_into_dataset_starting_at(ds1, h5p2, path, starting_position):
-    ds2 = h5p2[path]
-    ds2_shape = ds2.shape
-    ds2_rows = ds2_shape[0]
-    ending_position = starting_position + ds2_rows
-
-    ds1[starting_position : ending_position] = ds2[...]
-    return ending_position
 
 
 def combine_exported_hdf5_files_into_single_file(h5p_master, hdf5_files, total_row_count):
@@ -695,11 +649,7 @@ def combine_exported_hdf5_files_into_single_file(h5p_master, hdf5_files, total_r
             ds1 = core_array_path_dict[core_array_path]
 
             new_starting_position = copy_into_dataset_starting_at(ds1, h5pc, core_array_path, core_array_path_position[core_array_path])
-            #print(new_starting_position)
             core_array_path_position[core_array_path] = new_starting_position
-
-            # print(hdf5_file_name, core_array_path)
-            # print(h5p_master[core_array_path][...])
 
 
 def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_template=True, output_directory=None):
@@ -782,7 +732,6 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
         ks += 1
 
-
     print("Exported %s rows across %s files" % (total_number_of_rows, len(data_json_files)))
 
     all_hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_combined.hdf5")
@@ -792,7 +741,7 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
 
 if __name__ == "__main__":
-
+    #TODO: Add option for mapping from an existing master file
     if len(sys.argv) == 4:
         main(sys.argv[1], sys.argv[2], sys.argv[3])
     elif len(sys.argv) == 5:
