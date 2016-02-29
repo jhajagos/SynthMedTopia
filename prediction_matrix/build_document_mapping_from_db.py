@@ -236,6 +236,7 @@ def main(configuration):
     print(record_count)
 
     rs = execute_and_print(connection, main_transaction_query)
+
     print("Converting results")
 
     if "batch_size" in runtime_config["source_db_config"]:
@@ -262,7 +263,13 @@ def main(configuration):
 
     drop_table_if_exists = "drop table if exists %s" % transactions_of_interest_table
     create_table_sql = "create table %s" % transactions_of_interest_table
-    create_table_sql += " (transaction_id int8, batch_id int)"  # TODO: Get transaction id in correct format
+
+    if "transaction_id_format" in main_config:
+        transaction_id_format = main_config["transaction_id_format"]
+    else:
+        transaction_id_format = "int8"
+
+    create_table_sql += " (transaction_id %s, batch_id int)"  % transaction_id_format
 
     if refresh_transactions_table:
         execute_and_print(connection, drop_table_if_exists)
@@ -271,6 +278,8 @@ def main(configuration):
         i = 0
         for transaction_id_batch_id in transactions_of_interest_with_batch:
             transaction_id, batch_id = transaction_id_batch_id
+            if "var" in transaction_id_format:
+                transaction_id = "'%s'" % transaction_id
             insert_query = 'insert into %s values (%s, %s)' % (transactions_of_interest_table, transaction_id, batch_id)
             connection.execute(insert_query)
 

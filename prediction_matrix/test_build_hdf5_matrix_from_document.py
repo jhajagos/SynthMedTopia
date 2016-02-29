@@ -52,10 +52,10 @@ class RunHDF5Mapping(unittest.TestCase):
         bhm.main("transaction_test", "./test/test_single_file_batch.json", "./test/configuration_to_build_matrix.json")
         f5 = h5py.File("./test/transaction_test_1.hdf5",'r')
         dca = f5["/independent/classes/discharge/core_array"][...]
-        self.assertEquals(dca.shape, (2, 3))
+        self.assertEquals(dca.shape, (2, 5))
 
         dcac = f5["/independent/classes/discharge/column_annotations"][...]
-        self.assertEquals(dcac.shape, (3, 3))
+        self.assertEquals(dcac.shape, (3, 5))
 
         lab_count = f5["/independent/classes/lab/count/core_array"][...]
         lab_count_c = f5["/independent/classes/lab/count/column_annotations"][...]

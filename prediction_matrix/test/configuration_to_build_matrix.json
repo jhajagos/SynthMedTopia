@@ -11,6 +11,14 @@
          {
           "cell_value": "emergency",
           "type": "categorical"
+         },
+         {
+           "cell_value": "admit_date",
+           "type": "datetime"
+         },
+         {
+           "cell_value": "discharge_date",
+           "type": "datetime"
          }
      ],
      "type": "variables"

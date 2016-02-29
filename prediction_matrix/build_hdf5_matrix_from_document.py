@@ -6,6 +6,8 @@ import h5py
 import numpy as np
 import sys
 import os
+import datetime
+import time
 
 
 def filter_list_of_interest(list_to_filter, filter_to_apply):
@@ -97,7 +99,7 @@ def generate_column_annotations_variables(variables_dict, column_annotations):
             field_name = variable_dict["cell_value"]
 
             if variable_type == "numeric_list":
-                column_annotations[0, offset_start ] = variable_dict["name"]
+                column_annotations[0, offset_start] = variable_dict["name"]
                 column_annotations[1, offset_start] = field_name
                 column_annotations[2, offset_start] = variable_dict["process"]
             else:
@@ -363,7 +365,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                         dict_of_interest = get_entry_from_path(datum_dict, path)
                         if dict_of_interest is not None:
 
-                            if (variable_name in dict_of_interest) or (dict_of_interest.__class__ == [].__class__): #  An embedded list
+                            if (variable_name in dict_of_interest) or (dict_of_interest.__class__ == [].__class__): # An embedded list
                                 if dict_of_interest.__class__ == {}.__class__:
                                     list_of_interest = dict_of_interest[variable_name]
                                 else:
@@ -411,6 +413,13 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
 
                             if cell_value_field in dict_of_interest:
                                 field_value = dict_of_interest[cell_value_field]
+                                if variable_type == "datetime":
+                                    try:
+                                        time_obj = datetime.datetime.strptime(field_value, "%Y-%m-%d %H:%M:%S") # Seconds since January 1, 1970 Unix time
+                                    except ValueError:
+                                        time_obj = datetime.datetime.strptime(field_value, "%Y-%m-%d") # Seconds since January 1, 1970 Unix time
+
+                                    field_value = (time_obj - datetime.datetime(1970, 1, 1)).total_seconds()
                                 core_array[i, offset_start] = field_value
                         i += 1
 
