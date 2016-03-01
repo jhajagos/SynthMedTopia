@@ -21,7 +21,7 @@ three sections. Only two sections are mandatory.
   "source_db_config": {
     "connection_string": "sqlite:///./test/test_db.db3",
     "limit": null,
-    "refresh_transactions_table": 1
+    "refresh_transactions_table": 1,
     "batch_size": 10000
   },
   "json_file_config": {
