@@ -62,7 +62,8 @@ of records that are included in each file.
      "base_file_name": "transactions",
      "data_directory": "./test/"
 }
-`
+```
+
 The `"data_directory"` is the file path. It should be written in a OS specific format, on a Linux system: 
 `"/data/analysis/"` or in a windows environment: `"E:\\data\\analysis\"`. The parameter `"base_file_name"` is 
 the prefix name your files will be getting, for example, setting it `"encounters"` will generate 
