@@ -413,13 +413,17 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
 
                             if cell_value_field in dict_of_interest:
                                 field_value = dict_of_interest[cell_value_field]
-                                if variable_type == "datetime":
-                                    try:
-                                        time_obj = datetime.datetime.strptime(field_value, "%Y-%m-%d %H:%M:%S") # Seconds since January 1, 1970 Unix time
-                                    except ValueError:
-                                        time_obj = datetime.datetime.strptime(field_value, "%Y-%m-%d") # Seconds since January 1, 1970 Unix time
+                                if field_value is not None:
+                                    if variable_type == "datetime":
+                                        try:
+                                            time_obj = datetime.datetime.strptime(field_value, "%Y-%m-%d %H:%M:%S") # Seconds since January 1, 1970 Unix time
+                                        except ValueError:
+                                            try:
+                                                time_obj = datetime.datetime.strptime(field_value, "%Y-%m-%d") # Seconds since January 1, 1970 Unix time
+                                            except ValueError:
+                                                time_obj = datetime.datetime.strptime(field_value, "%Y-%m-%d %H:%M")
 
-                                    field_value = (time_obj - datetime.datetime(1970, 1, 1)).total_seconds()
+                                        field_value = (time_obj - datetime.datetime(1970, 1, 1)).total_seconds()
                                 core_array[i, offset_start] = field_value
                         i += 1
 

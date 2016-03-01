@@ -1,5 +1,6 @@
 """
-
+This program extracts a collection from a MongoDB instance and formats in a way the
+pipeline works.
 """
 
 def main(query_to_run, key_to_index_on, size_of_batches=1000):
