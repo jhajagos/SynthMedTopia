@@ -111,11 +111,20 @@ file includes a single mapping rule:
 
 The `"main_transactions"` section specifies details about the base table `"table_name"`.   The `"transaction_id"` parameter
 should point to the name primary key of the table. If the transaction_id is not unique than the mapping process will fail. By
-default the datatype of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.  For a subset of the table to select the SQL `"where_clause"` can be set. For generating matrices in a specific row order the `"fields_to_order_by"` sets this as a list of field names. 
+default the data type of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.  
+For a subset of the table to select the SQL `"where_clause"` can be set. For generating matrices in a specific row order 
+the `"fields_to_order_by"` sets this as a list of field names. 
 
-The mapper configuration occurs in the `"mappings"` section.  Each mapping rule is an entry in a list. 
+The mapper configuration occurs in the `"mappings"` section.  Each mapping rule is an entry in a list. A mapping rule must have
+a `"name"`, `"path"` and a `"type"`. Data is stored in nested dictionaries which creates a path. This is so data can be
+ grouped together. By grouping data in paths this helps making working with the data clearer. It is general good practice
+ to separate your independent variables with the dependent variables. For example, setting the `"path"` to
+ `["independent", "discharge"]` independent variable and for the variables that we are trying to predict 
+ `["dependent", "discharge"]`.
 
 ## Mapping multiple relational database tables
+
+## Running the mapper script
 
 # Going from JSON to HDF5
 
