@@ -13,7 +13,7 @@ and want to generate an HDF5 file.
 ### Setting up the runtime_config.json 
 
 The `runtime_config.json` file is for setting parameters which will change. In general the runtime_config.json
-is not a version controlled file as it may contain connection information to a database. It is divided in 
+is not a version controlled file as it may contain passwords to connect to a database. It is divided in 
 three sections. Only two sections are mandatory.
 
 ```json
@@ -66,10 +66,10 @@ of records that are included in each JSON file.
 
 The `"data_directory"` is the file path. It should be written in a OS specific format, on a Linux system: 
 `"/data/analysis/"` or in a windows environment: `"E:\\data\\analysis\"`. The parameter `"base_file_name"` is 
-the prefix name your JSON files, for example, setting it to `"encounters"` will generate 
-files `"encounters_1.json"`.
+the prefix name for the JSON files, for example, setting it to `"encounters"` will generate 
+files `"encounters_1.json"`, `"encounters_2.json"`, ... 
 
-If you want to store the JSON results in a MongoDB instance then you need to set this configuration section: 
+To store the JSON results in a MongoDB instance then the configuration section `"mongo_db_config"`: 
 ```json
 {
     "connection_string": "mongodb://localhost",
@@ -82,8 +82,8 @@ If you want to store the JSON results in a MongoDB instance then you need to set
  
 ### Creating a mapping.json file
 
-The mapping file describes how your row data gets mapped to a nested JSON based document. Below is the simplest
-mapping JSON file:
+The mapping file describes how table data gets mapped to a JSON document. The simplest mapping.json
+file includes a single mapping rule:
 
 ```json
 {
@@ -92,6 +92,7 @@ mapping JSON file:
              "fields_to_order_by": ["patient_id", "stay_id", "Discharge Date"],
              "where_criteria": null,
              "transaction_id": "encounter_id",
+             "transaction_id_format": "int8",
              "schema": null
         },
     "mappings":
@@ -102,13 +103,16 @@ mapping JSON file:
             "table_name": "encounters",
             "type": "one-to-one",
             "fields_to_include":  ["encounter_id",  "medical_record_number",  "drg",
-             "patient_gender", "patient_age", "day_from_start"]
+                                   "patient_gender", "patient_age", "day_from_start"]
         }
     ]
 }
 ```
 
-The `"main_transactions"` specifies the base table used to generate each record.  
+The `"main_transactions"` section specifies details about the base table `"table_name"`.   The `"transaction_id"` parameter
+should point to the name primary key of the table. If the transaction_id is not unique than the mapping process will fail. By
+default the datatype of the transaction_id is assumed to be int8.
+
 
 ## Mapping multiple relational database tables
 
