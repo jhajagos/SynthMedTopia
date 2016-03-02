@@ -1,10 +1,10 @@
 # Overview of the pipeline
 
-This tutorial describes the process of creating, executing, and updating maps from relation database tables via a JSON 
-intermediate format and then to HDF5 file format for machine learning applications. The pipeline can be run at various 
-points and does not need to be run to the final endpoint. A user may only want to map to a JSON document so it can be 
-loaded into a MongoDB instance and another user might start with a JSON document and want to generate an HDF5 file. 
-Also, a single data source maybe mapped differently depending on the problem at hand.
+This tutorial describes the process of creating, executing and updating maps from relation database tables to the HDF5 file 
+matrix format. Between the relational database and the HDF5 format there is a JSON format.
+The pipeline can be run at various  points and does not need to be run to the final endpoint. A user may only want to 
+map to a JSON document so it can be loaded into a MongoDB instance and another user might start with a JSON document 
+and want to generate an HDF5 file.
 
 # Going from relational database to a JSON document
 
@@ -51,11 +51,11 @@ The first section `"source_db_config"` describes the source database which data 
 
 The `"connection_string"` is a SQLAlchemy formatted [connection string](http://docs.sqlalchemy.org/en/latest/core/engines.html). 
 In the example here it is connecting
-to a local SQLite database. Only two database are supported at this point and this includes SQLite and PostGRESQL. The 
-parameter `"limit"` is used for testing purposes where only a limited number of records processed. By setting the
-parameter to `null` then there are no limit. The parameter `"refresh_transactions_table"` is set by default to `1` to 
+to a local SQLite database. The two supported database system are SQLite and PostgreSQL. The 
+parameter `"limit"` is used for testing purposes to evaluate mapper output. By setting the
+parameter to `null` then there is no limit. The parameter `"refresh_transactions_table"` is set by default to `1` to 
 refresh an internal table that is used to join against. The final optional parameter is `"batch_size"` which sets the number
-of records that are included in each file.
+of records that are included in each JSON file.
 
 ```json
 {
@@ -66,8 +66,8 @@ of records that are included in each file.
 
 The `"data_directory"` is the file path. It should be written in a OS specific format, on a Linux system: 
 `"/data/analysis/"` or in a windows environment: `"E:\\data\\analysis\"`. The parameter `"base_file_name"` is 
-the prefix name your files will be getting, for example, setting it `"encounters"` will generate 
-files `"encounters.json"`.
+the prefix name your JSON files, for example, setting it to `"encounters"` will generate 
+files `"encounters_1.json"`.
 
 If you want to store the JSON results in a MongoDB instance then you need to set this configuration section: 
 ```json
@@ -78,11 +78,13 @@ If you want to store the JSON results in a MongoDB instance then you need to set
     "refresh_collection": true
  }
  ```
+ The parameter `"refresh_collection"` with a value `1` will replace an existing collection.
  
 ### Creating a mapping.json file
 
-The mapping file describes how your row data maps to a more complicated nested JSON based document. Below is the simplest
+The mapping file describes how your row data gets mapped to a nested JSON based document. Below is the simplest
 mapping JSON file:
+
 ```json
 {
     "main_transactions":
@@ -106,8 +108,9 @@ mapping JSON file:
 }
 ```
 
+The `"main_transactions"` specifies the base table used to generate each record.  
 
-## Mapping multiple relational database tables to a nested structure
+## Mapping multiple relational database tables
 
 # Going from JSON to HDF5
 
