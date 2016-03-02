@@ -111,7 +111,9 @@ file includes a single mapping rule:
 
 The `"main_transactions"` section specifies details about the base table `"table_name"`.   The `"transaction_id"` parameter
 should point to the name primary key of the table. If the transaction_id is not unique than the mapping process will fail. By
-default the datatype of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.  For a subset of the table to select the SQL `"where_clause"` can be set. For generating matrices in a specific row order the `"fields_to_order_by"` is set as a list of field names.  
+default the datatype of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.  For a subset of the table to select the SQL `"where_clause"` can be set. For generating matrices in a specific row order the `"fields_to_order_by"` sets this as a list of field names. 
+
+The mapper configuration occurs in the `"mappings"` section.  Each mapping rule is an entry in a list. 
 
 ## Mapping multiple relational database tables
 
