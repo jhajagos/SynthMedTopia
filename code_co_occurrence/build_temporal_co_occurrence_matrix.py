@@ -10,6 +10,7 @@ import sys
 import itertools
 from generate_null_model_data import define_number_map
 
+
 """
     Given a table in relational PostGreSQL database build co-occurrence matrix across multiple dimensions.
 
@@ -42,7 +43,6 @@ from generate_null_model_data import define_number_map
         lag +-
 
 """
-
 
 
 def co_occur_min_array(h5p, path="/temporal_entity_code/min_day_array/"):
@@ -84,6 +84,7 @@ def co_occur_min_array(h5p, path="/temporal_entity_code/min_day_array/"):
     cot_ds[...] = co_occur_temporal
     co_ds = h5p.create_dataset(co_occur_path, shape=co_occur.shape, dtype=co_occur.dtype, compression="gzip")
     co_ds[...] = co_occur
+
 
 def build_code_min_max_matrices(config, h5p, connection, path, forward_code_map_dict, invariant_entity_attributes):
     entity_id = config["entity_id"]

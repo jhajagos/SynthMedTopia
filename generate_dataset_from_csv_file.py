@@ -2,7 +2,6 @@ __author__ = 'janos'
 
 import csv
 import random
-import sets
 import math
 
 def logger(string_to_log=""):

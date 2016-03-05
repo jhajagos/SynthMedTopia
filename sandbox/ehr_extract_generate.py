@@ -3,26 +3,7 @@ __author__ = 'Janos Hajagos'
 import numpy as np
 import json
 
-
-def read_configuration(config_file_name):
-    f = open(config_file_name)
-    configuration = json.load(f)
-    f.close()
-    return configuration
-
-
-def main():
-    pass
-
-if __name__ == "__main__":
-    main()
-
-comment = """
-
-On Wed, Mar 13, 2013 at 6:48 AM, Janos Hajagos <janos.hajagos@stonybrook.edu> wrote:
-
-    Gang,
-
+"""
     Here is the detail of the proposed medical data sets.
 
     Artificial data sets:
@@ -121,6 +102,20 @@ On Wed, Mar 13, 2013 at 6:48 AM, Janos Hajagos <janos.hajagos@stonybrook.edu> wr
            Distribution of in and out degrees
            Effect on censoring the data
 
-
 """
+
+
+def read_configuration(config_file_name):
+    f = open(config_file_name)
+    configuration = json.load(f)
+    f.close()
+    return configuration
+
+
+def main():
+    pass
+
+if __name__ == "__main__":
+    main()
+
 

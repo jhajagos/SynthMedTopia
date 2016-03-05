@@ -85,6 +85,7 @@ CASES =[
 
          ]
 
+
 def parse_pattern_of_visits(pattern_of_visits):
 
     max_line = 0
@@ -93,7 +94,6 @@ def parse_pattern_of_visits(pattern_of_visits):
         max_line = max(max_line, len(line))
         if len(line.strip()) > 0:
             lines_with_data += 1
-
 
     parsed_pattern_array = np.zeros(shape=(lines_with_data, max_line), dtype="uint8")
 
@@ -108,6 +108,7 @@ def parse_pattern_of_visits(pattern_of_visits):
             i += 1
 
     return parsed_pattern_array
+
 
 def convert_date_with_add_to_odbc(year, month, day, days_to_add):
     return dt.datetime.strftime(dt.date(year, month, day) + dt.timedelta(days=days_to_add), "%Y-%m-%d")
@@ -172,8 +173,6 @@ def generate_cases_as_csv(start_date, cases, patient_dict, hospital_dict, outfil
 
                 case_list_dict += [visit]
 
-
-
     pprint.pprint(case_list_dict)
 
     header = ["transaction_id", "patient_id", "patient_name", "provider_id", "provider_name", "start_day",
@@ -199,7 +198,6 @@ def print_cases(cases, patient_dict):
         print(patient["pattern of visits"])
         print("*" * 70)
         print(parse_pattern_of_visits(patient["pattern of visits"]))
-
 
 
 if __name__ == "__main__":
