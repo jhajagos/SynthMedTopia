@@ -117,10 +117,13 @@ the `"fields_to_order_by"` sets this as a list of field names.
 
 The mapper configuration occurs in the `"mappings"` section.  Each mapping rule is an entry in a list. A mapping rule must have
 a `"name"`, `"path"` and a `"type"`. Data is stored in nested dictionaries which creates a path. This is so data can be
- grouped together. By grouping data in paths this helps making working with the data clearer. It is general good practice
- to separate your independent variables with the dependent variables. For example, setting the `"path"` to
+ grouped together. By grouping data in paths this helps makes understanding the data clearer. It is general good practice
+ to separate your independent variables with the dependent variables when building a predictive model. For example, setting the `"path"` to
  `["independent", "discharge"]` independent variable and for the variables that we are trying to predict 
  `["dependent", "discharge"]`.
+
+The `"type"` paramameter supports the following maps: `"one-to-one"`, `"one-to-many"` and `"one-to-many-class"`. The simplest to start with is `"one-to-one"`.  This pairs a `"transaction_id"` with one and only one row of the target table specified by the `"table_name"` parameter. T
+
 
 ## Mapping multiple relational database tables
 
