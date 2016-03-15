@@ -1,13 +1,30 @@
 __author__ = 'janos'
 
 from utility_prediction import *
-import json
+try:
+    import ujson as json
+except ImportError:
+    import json
+
 import h5py
 import numpy as np
 import sys
 import os
 import datetime
 import time
+import gzip
+
+def data_dict_load(data_dict_json_file_name):
+
+    if data_dict_json_file_name[-2:] == "gz":
+        with gzip.open(data_dict_json_file_name, "rb") as f:
+            data_dict = json.loads(f.read().decode("ascii"))
+    else:
+        with open(data_dict_json_file_name, "rb") as fj:
+            data_dict = json.load(fj)
+
+    return data_dict
+
 
 
 def filter_list_of_interest(list_to_filter, filter_to_apply):
@@ -690,23 +707,26 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
     for data_json_file in data_json_files:  # For each subset generate a template
         batch_number = batch_ids[ks]
 
-        with open(data_json_file, "r") as fj:
-            data_dict = json.load(fj)
+        data_dict = data_dict_load(data_json_file)
 
-            with open(data_template_json, "r") as f:
-                data_template_dict = json.load(f)
 
-            data_template_dict = expand_template_dict(data_dict, data_template_dict)
-            data_translate_dict = build_translation_dict(data_dict, data_template_dict)
-            data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
-            data_translate_dict_json_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + "_data_template.json")
+        with open(data_template_json, "r") as f:
+            data_template_dict = json.load(f)
 
-            generated_data_templates_names += [data_translate_dict_json_name]
+        data_template_dict = expand_template_dict(data_dict, data_template_dict)
+        data_translate_dict = build_translation_dict(data_dict, data_template_dict)
+        data_translate_dict = add_offsets_to_translation_dict(data_translate_dict)
+        data_translate_dict_json_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + "_data_template.json")
 
-            with open(data_translate_dict_json_name, "w") as fjw:
+        generated_data_templates_names += [data_translate_dict_json_name]
+
+        with open(data_translate_dict_json_name, "w") as fjw:
+            try:
                 json.dump(data_translate_dict, fjw, indent=4, separators=(", ", ": "), sort_keys=True)
+            except:
+                json.dump(data_translate_dict, fjw)
 
-            ks += 1
+        ks += 1
 
     master_data_translate_dict = []
     for data_template_name in generated_data_templates_names:  # Combine templates into a single master template
@@ -718,7 +738,10 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
     master_data_translate_dict_name = os.path.join(output_directory, hdf5_base_name  + "_master_data_template.json")
     with open(master_data_translate_dict_name, "w") as fjw:
-        json.dump(master_data_translate_dict, fjw, indent=4, separators=(", ", ": "), sort_keys=True)
+        try:
+            json.dump(master_data_translate_dict, fjw, indent=4, separators=(", ", ": "), sort_keys=True)
+        except TypeError:
+            json.dump(master_data_translate_dict, fjw)
 
     generated_hdf5_file_names = []
     ks = 0
@@ -726,22 +749,22 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
     for data_json_file in data_json_files:  # Export each subset into a HDF5 matrix
         batch_number = batch_ids[ks]
 
-        with open(data_json_file, "r") as fj:
-            data_dict = json.load(fj)
-            total_number_of_rows += len(data_dict)
+        data_dict = data_dict_load(data_json_file)
 
-            hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + ".hdf5")
-            generated_hdf5_file_names += [hdf5_file_name]
+        total_number_of_rows += len(data_dict)
 
-            f5p = h5py.File(hdf5_file_name, "w")
-            if batch_number in sort_order_dict:
-                sort_order_json_name = sort_order_dict[batch_number]
-                with open(sort_order_json_name, "r") as fj:
-                    sort_order_list = json.load(fj)
-            else:
-                sort_order_list = None
+        hdf5_file_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + ".hdf5")
+        generated_hdf5_file_names += [hdf5_file_name]
 
-            build_hdf5_matrix(f5p, data_dict, master_data_translate_dict, sort_order_list)
+        f5p = h5py.File(hdf5_file_name, "w")
+        if batch_number in sort_order_dict:
+            sort_order_json_name = sort_order_dict[batch_number]
+            with open(sort_order_json_name, "r") as fj:
+                sort_order_list = json.load(fj)
+        else:
+            sort_order_list = None
+
+        build_hdf5_matrix(f5p, data_dict, master_data_translate_dict, sort_order_list)
 
         ks += 1
 

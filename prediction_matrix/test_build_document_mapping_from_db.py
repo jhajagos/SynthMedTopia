@@ -5,6 +5,7 @@ import sqlalchemy as sa
 import os
 import json
 import build_document_mapping_from_db
+import gzip
 
 schema = """
 create table encounters (
@@ -123,6 +124,18 @@ class TestDBMappingJSON(unittest.TestCase):
 
         with open(mapping_json_one, "r") as f:
             mapping_dict = json.load(f)
+            self.assertEquals(len(mapping_dict), 8)
+            keys = ['999', '1005', '1003', '1001', '1000', '1009', '1010', '20000']
+
+            for key in keys:
+                self.assertTrue(key in mapping_dict.keys())
+
+    def test_json_mapping_one_file_with_ujson_and_compression(self):
+        mapping_jsons, order_json = build_document_mapping_from_db.main_json("./test/test_mapping_document.json", "./test/runtime_config_test_gz_ujson.json")
+
+        mapping_json_one = mapping_jsons[0]
+        with gzip.open(mapping_json_one, "rb") as f:
+            mapping_dict = json.loads(f.read().decode("ascii"))
             self.assertEquals(len(mapping_dict), 8)
             keys = ['999', '1005', '1003', '1001', '1000', '1009', '1010', '20000']
 

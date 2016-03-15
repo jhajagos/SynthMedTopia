@@ -78,6 +78,13 @@ class RunHDF5Mapping(unittest.TestCase):
 
         self.assertTrue(np.sum(diagnosis1) > 0)
 
+    def test_mapping_single_compressed_file(self):
+
+        if os.path.exists("./test/transaction_test_1.hdf5"):
+            os.remove("./test/transaction_test_1.hdf5")
+
+        bhm.main("transaction_test", "./test/test_all_file_batch_gz.json", "./test/configuration_to_build_matrix.json")
+
     def test_mapping_split_file(self):
 
         bhm.main("transaction_test_split", "./test/test_simple_batch.json", "./test/configuration_to_build_matrix.json")

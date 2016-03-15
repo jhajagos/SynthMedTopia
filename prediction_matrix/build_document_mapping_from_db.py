@@ -1,11 +1,20 @@
 __author__ = 'jhajagos'
 
 import sqlalchemy as sa
+
+try:
+    import ujson
+except ImportError:
+    import json as ujson
+
 import json
+
 import os
 import datetime
 import time
 import sys
+import gzip
+import shutil
 
 
 def generate_date_stamp():
@@ -190,6 +199,17 @@ def main(configuration):
     main_config = configuration["mapping_config"]["main_transactions"]
     runtime_config = configuration["runtime_config"]
 
+    if "use_gzip_compression" in runtime_config: # Store data JSON files in GZIP
+        use_gzip_compression = runtime_config["use_gzip_compression"]
+    else:
+        use_gzip_compression = False
+
+    if "use_ujson" in runtime_config:
+        use_ujson = runtime_config["use_ujson"]
+    else:
+        use_ujson = False
+
+
     if "output_type" in runtime_config:
         output_type = runtime_config["output_type"]
     else:
@@ -368,10 +388,22 @@ def main(configuration):
         # Write dictionary out
         if results_dict_class is None:
             output_file_name = os.path.join(data_directory, base_file_name + "_" + str(batch_id) + "_" + generate_date_stamp() + ".json")
-            output_file_names_list += [output_file_name]
+
             print('Writing JSON file "%s"' % output_file_name)
             with open(output_file_name, "w") as fw:
-                json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+                if not use_ujson:
+                    json.dump(results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+                else:
+                    ujson.dump(results_dict, fw)
+
+            if use_gzip_compression:
+                with open(output_file_name, 'rb') as f_in, gzip.open(output_file_name + ".gz", 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+
+                os.remove(output_file_name)
+                output_file_name = output_file_name + ".gz"
+
+            output_file_names_list += [output_file_name]
 
             # Write out order of keys
             output_key_order_file_name = os.path.join(data_directory, base_file_name + "_" + str(batch_id) + "_" + "key_order_" + generate_date_stamp() + ".json")
@@ -380,16 +412,22 @@ def main(configuration):
             print("")
             print('Writing key order: "%s"' % output_key_order_file_name)
             with open(output_key_order_file_name, "w") as fw:
-                json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
+                if not use_ujson:
+                    json.dump(transactions_of_interest_str, fw, indent=4, separators=(',', ': '))
+                else:
+                    ujson.dump(transactions_of_interest_str, fw)
 
             batch_results_list_dict += [{"batch_id": batch_id, "data_json_file": os.path.abspath(output_file_name), "sort_order_file_name": os.path.abspath(output_key_order_file_name)}]
 
-        json_batch_file = os.path.join(data_directory, base_file_name + "_batches_" + generate_date_stamp() + ".json")
+        json_batch_file = os.path.join(data_directory, base_file_name + "_batches" + ".json")
         print()
         print("Writing batch files that were run")
 
         with open(json_batch_file, "w") as fwj:
-            json.dump(batch_results_list_dict, fwj, sort_keys=True, indent=4, separators=(',', ': '))
+            try:
+                json.dump(batch_results_list_dict, fwj, sort_keys=True, indent=4, separators=(',', ': '))
+            except:
+                json.dump(batch_results_list_dict, fwj)
 
     return output_file_names_list, output_key_order_file_list
 
