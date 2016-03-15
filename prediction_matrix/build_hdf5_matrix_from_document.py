@@ -400,7 +400,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                                     elif process == "first_item":
                                                         core_array[i, offset_start] = process_list[0]
                                                     elif process == "count":
-                                                        core_array[i, offset_start] = counter # Handles None values
+                                                        core_array[i, offset_start] = counter  # Handles None values
 
                                         elif variable_type == 'categorical_list':
                                             if process == "count_categories":
@@ -457,7 +457,7 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
             hdf5_core_array_path = "/" + hdf5_base_path + "/core_array/"
             hdf5_column_annotation_path = "/" + hdf5_base_path + "/column_annotations/"
 
-            core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end),
+            core_data_set = hdf5p.create_dataset(hdf5_core_array_path, shape=(data_items_count, offset_end), dtype="float64",
                                                  compression="gzip")
             core_data_set[...] = core_array
 
