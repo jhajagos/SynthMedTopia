@@ -356,13 +356,18 @@ def main(configuration):
                 mapping_table_name = '"%s"' % mapping["table_name"]
 
             mapping_query = "select * from %s" % mapping_table_name
-            if "fields_to_order_by" in mapping and mapping["fields_to_order_by"] is not None:
-                mapping_query += " order by "
-                for field in mapping["fields_to_order_by"]:
-                    mapping_query += ' "%s",' % field
-                mapping_query = mapping_query[:-1]
 
-            rs = execute_and_print(connection, query_wrapper % (mapping_query, transactions_of_interest_table))
+            order_by = ""
+            if "fields_to_order_by" in mapping and mapping["fields_to_order_by"] is not None:
+                order_by += " order by "
+                for field in mapping["fields_to_order_by"]:
+                    order_by += ' zzz."%s",' % field
+                order_by = order_by[:-1]
+            else:
+                order_by = ""
+
+            query_to_execute = query_wrapper  % (mapping_query, transactions_of_interest_table)
+            rs = execute_and_print(connection, query_to_execute  + order_by)
 
             if mapping["type"] in ["one-to-one", "one-to-many"]:
                 mapping_result_dict = build_dict_based_on_transaction_id_query(rs, mapping["fields_to_include"], transaction_id_field)
