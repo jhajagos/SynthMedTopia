@@ -34,6 +34,8 @@ three sections. Only two sections are mandatory.
     "collection_name": "mapped_encounters",
     "refresh_collection": true
   },
+  "use_ujson": false,
+  "use_gzip_compression": false,
   "output_type": "json_file"
 }
 ```
@@ -78,8 +80,14 @@ To store the JSON results in a MongoDB instance then the configuration section `
     "refresh_collection": true
  }
  ```
- The parameter `"refresh_collection"` with a value `1` will replace an existing collection.
  
+ The parameter `"refresh_collection"` with a value `1` will replace an existing collection.
+
+ For more optimal processing of large number of data there are two additional options. These options make the outputted
+ json files less readable. The `"use_ujson"` which is default false is to use the UltraJSON library which is faster than
+ the standard JSON library. The final option which saves considerable disk storage space is to use the gzip compression library
+ on the generated JSON files.
+
 ### Creating a mapping.json file
 
 The mapping file describes how table data gets mapped to a JSON document. The simplest mapping.json
@@ -122,10 +130,13 @@ a `"name"`, `"path"` and a `"type"`. Data is stored in nested dictionaries which
  `["independent", "discharge"]` independent variable and for the variables that we are trying to predict 
  `["dependent", "discharge"]`.
 
-The `"type"` paramameter supports the following maps: `"one-to-one"`, `"one-to-many"` and `"one-to-many-class"`. The simplest to start with is `"one-to-one"`.  This pairs a `"transaction_id"` with one and only one row of the target table specified by the `"table_name"` parameter. T
-
+The `"type"` parameter supports the following maps: `"one-to-one"`, `"one-to-many"` and `"one-to-many-class"`. The
+simplest to start with is `"one-to-one"`.  This pairs a `"transaction_id"` with one and only one row of the target table
+ specified by the `"table_name"` parameter. 
 
 ## Mapping multiple relational database tables
+
+The `"one-to-many`" maps a relations that is one-to-many. 
 
 ## Running the mapper script
 
