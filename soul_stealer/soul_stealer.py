@@ -3,7 +3,10 @@ import csv
 import os
 import pprint
 import random
-#Zip Code - 3 digits	Gender	Length of Stay	CCS	CCS Procedure
+
+"""
+This is some exploratory code to look at how
+"""
 
 
 def main(csv_file_name, list_of_rules, number_of_samples):
@@ -181,7 +184,8 @@ if __name__ == "__main__":
         (None, "Gender"),
         ("Gender", "Age Group"),
         (("Age Group", "Gender"), "CCS DX"),
-        ("CCS DX", "Length of Stay")
+        ("CCS DX", "Length of Stay"),
+        ("CCS DX", "CCS Proc")
     ]
 
     main("../../../data/sparcs/ccs_age_diagnosis_relationship.csv", list_of_rules, 20)
