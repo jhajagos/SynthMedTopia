@@ -515,6 +515,7 @@ def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
             merged_data_translate_dict = []
             for i in range(len(data_translate_dict_1)):
 
+
                 merged_item_dict = {}
                 item_dict_1 = data_translate_dict_1[i]
                 item_dict_2 = data_translate_dict_2[i]
@@ -523,7 +524,10 @@ def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
                     if key not in ('variables',):
                         merged_item_dict[key] = item_dict_1[key]
 
-                if "variables" in item_dict_1:
+                if "variables" in item_dict_1 and len(item_dict_1["variables"]) == 0:  #Case where no variables in item_dict_1
+                    merged_item_dict = item_dict_2
+
+                elif "variables" in item_dict_1:
                     variables_1 = item_dict_1["variables"]
                     variables_2 = item_dict_2["variables"]
                     running_offset = 0
@@ -709,7 +713,6 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
         data_dict = data_dict_load(data_json_file)
 
-
         with open(data_template_json, "r") as f:
             data_template_dict = json.load(f)
 
@@ -719,6 +722,8 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
         data_translate_dict_json_name = os.path.join(output_directory, hdf5_base_name + "_" + str(batch_number) + "_data_template.json")
 
         generated_data_templates_names += [data_translate_dict_json_name]
+
+        print("Generated: '%s'" % data_translate_dict_json_name)
 
         with open(data_translate_dict_json_name, "w") as fjw:
             try:
@@ -730,13 +735,13 @@ def main(hdf5_base_name, batch_json_file_name, data_template_json, refresh_templ
 
     master_data_translate_dict = []
     for data_template_name in generated_data_templates_names:  # Combine templates into a single master template
-
+        print("Merging '%s' to master data template" % data_template_name)
         with open(data_template_name) as fj:
             data_translate_dict = json.load(fj)
 
             master_data_translate_dict = merge_data_translate_dicts(master_data_translate_dict, data_translate_dict)
 
-    master_data_translate_dict_name = os.path.join(output_directory, hdf5_base_name  + "_master_data_template.json")
+    master_data_translate_dict_name = os.path.join(output_directory, hdf5_base_name + "_master_data_template.json")
     with open(master_data_translate_dict_name, "w") as fjw:
         try:
             json.dump(master_data_translate_dict, fjw, indent=4, separators=(", ", ": "), sort_keys=True)
