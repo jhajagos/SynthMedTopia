@@ -2,6 +2,7 @@
 Utility function
 """
 
+
 def get_all_paths(h5py_group):
     """Recurse and get all non-groups"""
     non_groups = []

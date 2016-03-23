@@ -209,7 +209,6 @@ def main(configuration):
     else:
         use_ujson = False
 
-
     if "output_type" in runtime_config:
         output_type = runtime_config["output_type"]
     else:

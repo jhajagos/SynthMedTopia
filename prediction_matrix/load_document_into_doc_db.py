@@ -6,6 +6,7 @@ import sys
 A simple program for loading JSON dicts into a MongoDB collection
 """
 
+#TODO: Add support for GZIP json
 
 def main(json_json_files_to_process, runtime_json, collection_name_override=None):
     with open(runtime_json, "r") as fj:
