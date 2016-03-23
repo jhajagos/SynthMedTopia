@@ -328,7 +328,10 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
         hdf5_base_path = "/".join(export_path)
 
         if template_type == "variables":
-            offset_end = data_translate_dict["variables"][-1]["offset_end"]
+            if len(data_translate_dict["variables"]):
+                offset_end = data_translate_dict["variables"][-1]["offset_end"]
+            else:
+                offset_end = 0
 
         if template_type == "categorical_list":
             offset_end = data_translate_dict["offset_end"]

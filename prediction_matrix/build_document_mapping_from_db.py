@@ -289,7 +289,7 @@ def main(configuration):
     else:
         transaction_id_format = "int8"
 
-    create_table_sql += " (transaction_id %s, batch_id int)"  % transaction_id_format
+    create_table_sql += " (transaction_id %s, batch_id int)" % transaction_id_format
 
     if refresh_transactions_table:
         execute_and_print(connection, drop_table_if_exists)
@@ -366,7 +366,7 @@ def main(configuration):
             else:
                 order_by = ""
 
-            query_to_execute = query_wrapper  % (mapping_query, transactions_of_interest_table)
+            query_to_execute = query_wrapper % (mapping_query, transactions_of_interest_table)
             rs = execute_and_print(connection, query_to_execute  + order_by)
 
             if mapping["type"] in ["one-to-one", "one-to-many"]:
