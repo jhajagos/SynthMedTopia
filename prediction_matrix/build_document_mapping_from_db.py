@@ -68,7 +68,11 @@ def build_dict_based_on_transaction_id_multi_class_query(rs, fields_of_interest,
 
         for field in fields_of_interest:
             if r[field].__class__ == datetime.datetime:
-                multi_class_dict[field] = r[field].strftime("%Y-%m-%d %H:%M")
+                try:
+                    multi_class_dict[field] = r[field].strftime("%Y-%m-%d %H:%M")
+                except ValueError:
+                    print("Invalid date: '%s'" % r[field])
+                    multi_class_dict[field] = None
             else:
                 multi_class_dict[field] = r[field]
 
@@ -138,7 +142,11 @@ def build_dict_based_on_transaction_id_query(rs, fields_of_interest, transaction
         single_dict = {}
         for field in fields_of_interest:
             if r[field].__class__ == datetime.datetime:
-                single_dict[field] = r[field].strftime("%Y-%m-%d %H:%M")
+                try:
+                    single_dict[field] = r[field].strftime("%Y-%m-%d %H:%M")
+                except ValueError:
+                    print("Invalid date: '%s'" % r[field])
+                    single_dict[field] = None
             else:
                 single_dict[field] = r[field]
 
