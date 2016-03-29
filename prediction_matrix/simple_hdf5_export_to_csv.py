@@ -59,4 +59,3 @@ def main(hdf5_file_name, paths=None):
 if __name__ == "__main__":
 
     main(sys.argv[1])
-    #[u'/identifiers/independent/', u'/dependent/classes/discharge/', u'/independent/classes/discharge/', u'/independent/classes/discharge_dx/'])
