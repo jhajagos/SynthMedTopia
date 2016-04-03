@@ -208,11 +208,14 @@ into keyed entries in a dictionary/hash table.
 ```
 
 The additional parameter is `"group_by_field"` which is the field that is going 
-to be used to split the entries into. In this example the values will be split
+to be used to split the entries into separate keyed lists. In this example the values will be split
 by the `"test_name"`. This makes it easy to pull out the sequence of tests associated with
 a specific test type.
 
 ## Running the mapper script
+
+Once the runtime_config.json and the mapping_config.json files running the 
+script is straight forward.
 
 # Going from JSON to HDF5
 
