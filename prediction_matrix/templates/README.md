@@ -77,7 +77,7 @@ To store the JSON results in a MongoDB instance then the configuration section `
     "connection_string": "mongodb://localhost",
     "database_name": "encounters",
     "collection_name": "mapped_encounters",
-    "refresh_collection": true
+    "refresh_collection": 1
  }
  ```
  
@@ -134,6 +134,41 @@ The `"type"` parameter supports the following maps: `"one-to-one"`, `"one-to-man
 simplest to start with is `"one-to-one"`.  This pairs a `"transaction_id"` with one and only one row of the target table
  specified by the `"table_name"` parameter. 
 
+```json
+{
+    "name": "discharge",
+    "path": ["independent", "classes"],
+    "table_name": "encounters",
+    "type": "one-to-one",
+    "fields_to_include":  ["encounter_id",  "medical_record_number",  "drg",
+                           "patient_gender", "patient_age", "day_from_start"]
+}
+```
+
+The `"table_name"` is the database table to extract data from. The `"path"` is the nested dictionary 
+path where the `"name"` key is stored. As an example the above mapping rule would generate:
+```json
+{
+    "999": {
+        "independent": {
+            "classes": {
+                "discharge": {
+                    "day_from_start": 15,
+                    "drg": "002",
+                    "encounter_id": 999,
+                    "medical_record_number": 22,
+                    "patient_age": 85,
+                    "patient_gender": "U"
+                }            }
+        }
+    }
+}
+```
+To get to the discharge details for `"transaction_id" = "999"` would be
+`discharge_dict["999"]["independent"]["classes"]["discharge"]`. The final required parameter is 
+`"fields_to_include"` which are the names of the database fields in the table to include in the extract.
+
+
 ## Mapping multiple relational database tables
 
 The `"one-to-many`" maps a relation that is one-to-many between two database tables. As an example, an ordered set of diagnoses 
@@ -147,10 +182,35 @@ The transaction ID field must share the same name across both tables and be of t
     "table_name": "diagnoses",
     "fields_to_order_by": ["encounter_id", "sequence_id"],
     "type": "one-to-many",
-    "fields_to_include": ["encounter_id", "sequence_id", "diagnosis_description", "diagnosis_code", "ccs_code", "ccs_description"]
+    "fields_to_include": ["encounter_id", "sequence_id", "diagnosis_description", 
+                           "diagnosis_code", "ccs_code", "ccs_description"]
 }
 ```
 
+An additional required parameter is `"fields_to_order_by"`. This parameter must include the linking field and
+the ordering parameter. In the above case that is `"sequence_id"`. If this is not set correctly 
+the program will break apart your rows incorrectly.
+
+The mapping `"one-to-many-class"` is similar to `"one-to-many"` except it splits the lists
+into keyed entries in a dictionary/hash table. 
+
+```json
+{
+    "name": "lab",
+    "path": ["independent", "classes"],
+    "table_name": "laboratory_tests",
+    "fields_to_order_by": ["encounter_id", "test_name", "minutes_since_midnight"],
+    "type": "one-to-many-class",
+    "fields_to_include": ["encounter_id", "test_name", "code", "numeric_value","non_numeric_value",
+      "test_status", "minutes_since_midnight"],
+    "group_by_field": "test_name"
+        }
+```
+
+The additional parameter is `"group_by_field"` which is the field that is going 
+to be used to split the entries into. In this example the values will be split
+by the `"test_name"`. This makes it easy to pull out the sequence of tests associated with
+a specific test type.
 
 ## Running the mapper script
 
