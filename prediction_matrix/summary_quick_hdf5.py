@@ -49,4 +49,4 @@ if __name__ == "__main__":
         main(sys.argv[1])
 
     else:
-        print("Usage: python summary_quick_hdf5.py  ")
+        print("Usage: python summary_quick_hdf5.py  data_file.hdf5")

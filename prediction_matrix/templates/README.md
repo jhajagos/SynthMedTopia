@@ -119,10 +119,10 @@ file includes a single mapping rule:
 
 The `"main_transactions"` section specifies details about the base table `"table_name"`.   The `"transaction_id"` parameter
 should point to the name primary key of the table. If the transaction_id is not unique than the mapping process will fail. By
-default the data type of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.  
+default the data type of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.
 For a subset of the table to select the SQL `"where_clause"` can be set. For generating matrices in a specific row order 
 the `"fields_to_order_by"` sets this as a list of field names. 
-
+ 
 The mapper configuration occurs in the `"mappings"` section.  Each mapping rule is an entry in a list. A mapping rule must have
 a `"name"`, `"path"` and a `"type"`. Data is stored in nested dictionaries which creates a path. This is so data can be
  grouped together. By grouping data in paths this helps makes understanding the data clearer. It is general good practice
@@ -136,7 +136,21 @@ simplest to start with is `"one-to-one"`.  This pairs a `"transaction_id"` with 
 
 ## Mapping multiple relational database tables
 
-The `"one-to-many`" maps a relations that is one-to-many. 
+The `"one-to-many`" maps a relation that is one-to-many between two database tables. As an example, an ordered set of diagnoses 
+associated with a discharge that are stored in a separate table. The two tables will need to be linked by a common transaction id field.
+The transaction ID field must share the same name across both tables and be of the same type.
+
+```json
+{
+    "name": "discharge_dx",
+    "path": ["independent", "classes"],
+    "table_name": "diagnoses",
+    "fields_to_order_by": ["encounter_id", "sequence_id"],
+    "type": "one-to-many",
+    "fields_to_include": ["encounter_id", "sequence_id", "diagnosis_description", "diagnosis_code", "ccs_code", "ccs_description"]
+}
+```
+
 
 ## Running the mapper script
 
