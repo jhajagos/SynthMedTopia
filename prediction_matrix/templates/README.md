@@ -84,8 +84,9 @@ To store the JSON results in a MongoDB instance then the configuration section `
  The parameter `"refresh_collection"` with a value `1` will replace an existing collection.
 
  For more optimal processing of large number of data there are two additional options. These options make the outputted
- json files less readable. The `"use_ujson"` which is default false is to use the UltraJSON library which is faster than
- the standard JSON library. The final option which saves considerable disk storage space is to use the gzip compression library
+ JSON files less readable. The `"use_ujson"` which is default `0` or `false` is to use the UltraJSON library which is faster than
+ the standard JSON library. The final option which saves considerable disk 
+ storage space is to use the gzip compression library
  on the generated JSON files.
 
 ### Creating a mapping.json file
@@ -159,7 +160,8 @@ path where the `"name"` key is stored. As an example the above mapping rule woul
                     "medical_record_number": 22,
                     "patient_age": 85,
                     "patient_gender": "U"
-                }            }
+                }
+            }
         }
     }
 }
@@ -210,16 +212,34 @@ into keyed entries in a dictionary/hash table.
 The additional parameter is `"group_by_field"` which is the field that is going 
 to be used to split the entries into separate keyed lists. In this example the values will be split
 by the `"test_name"`. This makes it easy to pull out the sequence of tests associated with
-a specific test type.
+a specific test.
 
 ## Running the mapper script
 
-Once the runtime_config.json and the mapping_config.json files running the 
-script is straight forward.
+Once the `runtime_config.json` and the `mapping_config.json` files running the 
+script is straight forward. The JSON files can have any name but the mapping file
+comes before the runtime file.
+
+```bash
+python build_document_mapping_from_db.py mapping_config.json runtime_config.json
+```
+
+The script will generate a set of JSON files that are stored in the `"data_directory"` 
+defined in the `runtime_config.json` file. The
+data will likely be split across multiple JSON files. The name of each generated file
+is stored in a file that starts with `"base_file_name"` defined parameter 
+and ends in `"_batches.json"`. This file is needed for further steps in the 
+pipeline.
 
 # Going from JSON to HDF5
 
+Mapping to the matrix HDF5 makes it easier use data in machine learning or
+data mining applications. Fundamentally, these methods work on matrices and 
+not on nested lists.
+
 ## Mapping a flat document
+
+
 
 ## Mapping a nested document
 
