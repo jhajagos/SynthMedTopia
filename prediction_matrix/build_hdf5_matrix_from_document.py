@@ -47,10 +47,13 @@ def get_entry_from_path(dict_with_path, path_list):
         key = path_list[0]
         path_list = path_list[1:]
 
-        if key in dict_with_path:
-            dict_with_path = dict_with_path[key]
+        if dict_with_path is not None:
+            if key in dict_with_path:
+                dict_with_path = dict_with_path[key]
+            else:
+                return None
         else:
-            return None
+            None
 
     return dict_with_path
 
@@ -219,16 +222,17 @@ def build_translation_dict(data_dict, template_list_dict):
                     for data_key in data_dict:
                         datum_dict = data_dict[data_key]
                         dict_of_interest = get_entry_from_path(datum_dict, path)
-                        if variable_dict["cell_value"] in dict_of_interest:
-                            value_of_interest = str(dict_of_interest[variable_dict["cell_value"]])
-                            if value_of_interest in item_dict:
-                                item_dict[value_of_interest] += 1
-                            else:
-                                item_dict[value_of_interest] = 1
-                                if "description" in variable_dict:
-                                    description_dict[value_of_interest] = dict_of_interest[variable_dict["description"]]
-                                if "label" in variable_dict:
-                                    label_dict[value_of_interest] = dict_of_interest[variable_dict["label"]]
+                        if dict_of_interest is not None:
+                            if variable_dict["cell_value"] in dict_of_interest:
+                                value_of_interest = str(dict_of_interest[variable_dict["cell_value"]])
+                                if value_of_interest in item_dict:
+                                    item_dict[value_of_interest] += 1
+                                else:
+                                    item_dict[value_of_interest] = 1
+                                    if "description" in variable_dict:
+                                        description_dict[value_of_interest] = dict_of_interest[variable_dict["description"]]
+                                    if "label" in variable_dict:
+                                        label_dict[value_of_interest] = dict_of_interest[variable_dict["label"]]
 
                     data_keys = item_dict.keys()
                     data_keys.sort()
@@ -277,20 +281,21 @@ def build_translation_dict(data_dict, template_list_dict):
 
             for data_key in data_dict:
                 datum_dict = data_dict[data_key]
-                dicts_of_interest = get_entry_from_path(datum_dict, path)
-                if dicts_of_interest is not None:
-                    for dict_of_interest in dicts_of_interest:
+                if datum_dict is not None:
+                    dicts_of_interest = get_entry_from_path(datum_dict, path)
+                    if dicts_of_interest is not None:
+                        for dict_of_interest in dicts_of_interest:
 
-                        if template_dict["field"] in dict_of_interest:
-                            value_of_interest = str(dict_of_interest[template_dict["field"]])
-                            if value_of_interest in item_dict:
-                                item_dict[value_of_interest] += 1
-                            else:
-                                item_dict[value_of_interest] = 1
-                                if "description" in template_dict:
-                                    description_dict[value_of_interest] = dict_of_interest[template_dict["description"]]
-                                if "label" in template_dict:
-                                    label_dict[value_of_interest] = dict_of_interest[template_dict["label"]]
+                            if template_dict["field"] in dict_of_interest:
+                                value_of_interest = str(dict_of_interest[template_dict["field"]])
+                                if value_of_interest in item_dict:
+                                    item_dict[value_of_interest] += 1
+                                else:
+                                    item_dict[value_of_interest] = 1
+                                    if "description" in template_dict:
+                                        description_dict[value_of_interest] = dict_of_interest[template_dict["description"]]
+                                    if "label" in template_dict:
+                                        label_dict[value_of_interest] = dict_of_interest[template_dict["label"]]
 
             data_keys = item_dict.keys()
             data_keys.sort()
@@ -354,10 +359,11 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                         datum_dict = data_dict[data_key]
                         dict_of_interest = get_entry_from_path(datum_dict, path)
 
-                        if cell_value_field in dict_of_interest:
-                            field_value = str(dict_of_interest[cell_value_field])
-                            field_value_position = position_map[field_value]
-                            core_array[i, offset_start + field_value_position] = 1
+                        if dict_of_interest is not None:
+                            if cell_value_field in dict_of_interest:
+                                field_value = str(dict_of_interest[cell_value_field])
+                                field_value_position = position_map[field_value]
+                                core_array[i, offset_start + field_value_position] = 1
                         i += 1
 
                 else:
