@@ -77,15 +77,16 @@ To store the JSON results in a MongoDB instance then the configuration section `
     "connection_string": "mongodb://localhost",
     "database_name": "encounters",
     "collection_name": "mapped_encounters",
-    "refresh_collection": true
+    "refresh_collection": 1
  }
  ```
  
  The parameter `"refresh_collection"` with a value `1` will replace an existing collection.
 
  For more optimal processing of large number of data there are two additional options. These options make the outputted
- json files less readable. The `"use_ujson"` which is default false is to use the UltraJSON library which is faster than
- the standard JSON library. The final option which saves considerable disk storage space is to use the gzip compression library
+ JSON files less readable. The `"use_ujson"` which is default `0` or `false` is to use the UltraJSON library which is faster than
+ the standard JSON library. The final option which saves considerable disk 
+ storage space is to use the gzip compression library
  on the generated JSON files.
 
 ### Creating a mapping.json file
@@ -119,10 +120,10 @@ file includes a single mapping rule:
 
 The `"main_transactions"` section specifies details about the base table `"table_name"`.   The `"transaction_id"` parameter
 should point to the name primary key of the table. If the transaction_id is not unique than the mapping process will fail. By
-default the data type of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.  
+default the data type of the transaction_id is assumed to be int8. The parameter `"schema"` sets the database schema.
 For a subset of the table to select the SQL `"where_clause"` can be set. For generating matrices in a specific row order 
 the `"fields_to_order_by"` sets this as a list of field names. 
-
+ 
 The mapper configuration occurs in the `"mappings"` section.  Each mapping rule is an entry in a list. A mapping rule must have
 a `"name"`, `"path"` and a `"type"`. Data is stored in nested dictionaries which creates a path. This is so data can be
  grouped together. By grouping data in paths this helps makes understanding the data clearer. It is general good practice
@@ -134,15 +135,111 @@ The `"type"` parameter supports the following maps: `"one-to-one"`, `"one-to-man
 simplest to start with is `"one-to-one"`.  This pairs a `"transaction_id"` with one and only one row of the target table
  specified by the `"table_name"` parameter. 
 
+```json
+{
+    "name": "discharge",
+    "path": ["independent", "classes"],
+    "table_name": "encounters",
+    "type": "one-to-one",
+    "fields_to_include":  ["encounter_id",  "medical_record_number",  "drg",
+                           "patient_gender", "patient_age", "day_from_start"]
+}
+```
+
+The `"table_name"` is the database table to extract data from. The `"path"` is the nested dictionary 
+path where the `"name"` key is stored. As an example the above mapping rule would generate:
+```json
+{
+    "999": {
+        "independent": {
+            "classes": {
+                "discharge": {
+                    "day_from_start": 15,
+                    "drg": "002",
+                    "encounter_id": 999,
+                    "medical_record_number": 22,
+                    "patient_age": 85,
+                    "patient_gender": "U"
+                }
+            }
+        }
+    }
+}
+```
+To get to the discharge details for `"transaction_id" = "999"` would be
+`discharge_dict["999"]["independent"]["classes"]["discharge"]`. The final required parameter is 
+`"fields_to_include"` which are the names of the database fields in the table to include in the extract.
+
+
 ## Mapping multiple relational database tables
 
-The `"one-to-many`" maps a relations that is one-to-many. 
+The `"one-to-many`" maps a relation that is one-to-many between two database tables. As an example, an ordered set of diagnoses 
+associated with a discharge that are stored in a separate table. The two tables will need to be linked by a common transaction id field.
+The transaction ID field must share the same name across both tables and be of the same type.
+
+```json
+{
+    "name": "discharge_dx",
+    "path": ["independent", "classes"],
+    "table_name": "diagnoses",
+    "fields_to_order_by": ["encounter_id", "sequence_id"],
+    "type": "one-to-many",
+    "fields_to_include": ["encounter_id", "sequence_id", "diagnosis_description", 
+                           "diagnosis_code", "ccs_code", "ccs_description"]
+}
+```
+
+An additional required parameter is `"fields_to_order_by"`. This parameter must include the linking field and
+the ordering parameter. In the above case that is `"sequence_id"`. If this is not set correctly 
+the program will break apart your rows incorrectly.
+
+The mapping `"one-to-many-class"` is similar to `"one-to-many"` except it splits the lists
+into keyed entries in a dictionary/hash table. 
+
+```json
+{
+    "name": "lab",
+    "path": ["independent", "classes"],
+    "table_name": "laboratory_tests",
+    "fields_to_order_by": ["encounter_id", "test_name", "minutes_since_midnight"],
+    "type": "one-to-many-class",
+    "fields_to_include": ["encounter_id", "test_name", "code", "numeric_value","non_numeric_value",
+      "test_status", "minutes_since_midnight"],
+    "group_by_field": "test_name"
+        }
+```
+
+The additional parameter is `"group_by_field"` which is the field that is going 
+to be used to split the entries into separate keyed lists. In this example the values will be split
+by the `"test_name"`. This makes it easy to pull out the sequence of tests associated with
+a specific test.
 
 ## Running the mapper script
 
+Once the `runtime_config.json` and the `mapping_config.json` files running the 
+script is straight forward. The JSON files can have any name but the mapping file
+comes before the runtime file.
+
+```bash
+python build_document_mapping_from_db.py mapping_config.json runtime_config.json
+```
+
+The script will generate a set of JSON files that are stored in the `"data_directory"` 
+defined in the `runtime_config.json` file. The
+data will likely be split across multiple JSON files. The name of each generated file
+is stored in a file that starts with `"base_file_name"` defined parameter 
+and ends in `"_batches.json"`. This file is needed for further steps in the 
+pipeline.
+
 # Going from JSON to HDF5
 
+Mapping to the matrix HDF5 makes it easier use data in machine learning or
+data mining applications. Fundamentally, these methods work on matrices and 
+not on nested lists.
+
 ## Mapping a flat document
+
+
 
 ## Mapping a nested document
 
