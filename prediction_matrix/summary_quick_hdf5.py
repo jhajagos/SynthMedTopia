@@ -45,7 +45,7 @@ def main(hdf5_file_name, csv_file_name=None):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
+    if len(sys.argv) == 2:
         main(sys.argv[1])
 
     else:
