@@ -524,7 +524,6 @@ def merge_data_translate_dicts(data_translate_dict_1, data_translate_dict_2):
             merged_data_translate_dict = []
             for i in range(len(data_translate_dict_1)):
 
-
                 merged_item_dict = {}
                 item_dict_1 = data_translate_dict_1[i]
                 item_dict_2 = data_translate_dict_2[i]
