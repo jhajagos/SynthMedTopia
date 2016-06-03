@@ -1,7 +1,9 @@
 import unittest
 import h5py
 import os
-import numpy
+import numpy as np
+
+import post_process_hdf5 as pp
 
 class TestNormalizeCounts(unittest.TestCase):
     def setUp(self):
@@ -13,17 +15,31 @@ class TestNormalizeCounts(unittest.TestCase):
         lab_tests = [["Hemoglobin","Hemoglobin", "Blood Glucose", "Blood Glucose", "Blood Glucose", "WBC", "WBC"],
                      ["Normal", "Abnormal", "Low", "Normal", "High", "Normal", "Abnormal"],
                      ["", "", "", "", "", "", ""]]
-        lab_test_array = numpy.array(lab_tests, dtype="S128")
+        lab_test_array = np.array(lab_tests, dtype="S128")
         ca[...] = lab_test_array
 
         lab_test_values = [[0, 1, 5, 2, 1, 10, 1], [0, 0, 0, 0, 0, 0, 1], [5, 0, 0, 10, 0, 15, 1]]
 
-        lab_test_corearray = numpy.array(lab_test_values)
+        lab_test_corearray = np.array(lab_test_values)
         corea = f5.create_dataset("/lab/categories/core_array", shape=(3,7))
         corea[...] = lab_test_corearray
 
-    def test_something(self):
-        self.assertEqual(True, False)
+
+    def test_apply_rules(self):
+        rules = [
+           {
+               "path": "/lab/categories/",
+               "write_path": "/lab/category_present/",
+               "rule": "zero_or_one"
+           }
+        ]
+        pp.main("./test/test_hdf5.hdf5", rules, chunks=2)
+
+        f5t = h5py.File("./test/test_hdf5.hdf5", "r")
+        present_array = f5t["/lab/category_present/core_array"][...]
+        self.assertEqual(6 + 1 + 4, np.sum(present_array))
+
+
 
 
 if __name__ == '__main__':
