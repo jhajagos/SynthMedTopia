@@ -31,13 +31,22 @@ class TestNormalizeCounts(unittest.TestCase):
                "path": "/lab/categories/",
                "write_path": "/lab/category_present/",
                "rule": "zero_or_one"
-           }
+           },
+            {
+                "path": "/lab/categories/",
+                "write_path": "/lab/category_count_normalized/",
+                "rule": "normalize_category_count"
+            }
         ]
         pp.main("./test/test_hdf5.hdf5", rules, chunks=2)
 
         f5t = h5py.File("./test/test_hdf5.hdf5", "r")
         present_array = f5t["/lab/category_present/core_array"][...]
         self.assertEqual(6 + 1 + 4, np.sum(present_array))
+
+        normalized_array = f5t["/lab/category_count_normalized/core_array"][...]
+
+        self.assertEquals(7, np.sum(normalized_array))
 
 
 
