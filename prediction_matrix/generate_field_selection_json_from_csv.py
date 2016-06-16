@@ -2,7 +2,8 @@ import csv
 import json
 import sys
 
-def main(csv_file_name, criteria_field="to_filter"):
+
+def main(csv_file_name, criteria_field="to_include"):
 
     path_field_selection = {}
     path_field_order = []

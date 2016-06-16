@@ -22,7 +22,11 @@ def main_subset(hdf5_file_name, hdf5_file_name_to_write_to, queries_to_select_li
         row_array = query_rows_hdf5(fp5, queries_to_select_list)
         print(row_array)
     else:
-        pass
+        for path in column_path_dict:
+            n_rows = fp5[path + "/core_array/"][:, 0].shape[0]
+            break
+
+        row_array = (np.arange(0, n_rows),)
 
     wfp5 = h5py.File(hdf5_file_name_to_write_to, "w")
 
@@ -41,7 +45,8 @@ def main_subset(hdf5_file_name, hdf5_file_name_to_write_to, queries_to_select_li
             n_rows = row_array[0].shape[0]
 
             source_data_set = fp5[core_array_path]
-            core_array_ds = wfp5.create_dataset(core_array_path, dtype=source_data_set.dtype, shape=(n_rows, n_columns))
+            core_array_ds = wfp5.create_dataset(core_array_path, dtype=source_data_set.dtype,
+                                                shape=(n_rows, n_columns), compression="gzip")
 
             full_column_core_array = fp5[core_array_path][:, indices]
             print(path)
@@ -69,8 +74,12 @@ def main(hdf5_file_to_read, hdf5_file_to_write, json_population_selection, json_
     else:
         field_selection = None
 
-    with open(json_population_selection, "r") as f:
-        population_selection = json.load(f)
+    if json_population_selection is not None:
+
+        with open(json_population_selection, "r") as f:
+            population_selection = json.load(f)
+    else:
+        population_selection = None
 
     print(population_selection)
 
@@ -80,8 +89,11 @@ def main(hdf5_file_to_read, hdf5_file_to_write, json_population_selection, json_
 if __name__ == "__main__":
 
     if len(sys.argv) == 1:
-        print("Usage: python compact_subset_hdf5.py hdf5_file_to_read.hdf5 hdf5_file_to_write.hdf5 [row_selection.json] [column_selection.json]")
+        print("Usage: python compact_subset_hdf5.py hdf5_file_to_read.hdf5 hdf5_file_to_write.hdf5 [row_selection.json|None] [column_selection.json]")
     elif len(sys.argv) == 4:
         main(sys.argv[1], sys.argv[2], sys.argv[3])
     else:
-        main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+        if sys.argv[3] == "None":
+            main(sys.argv[1], sys.argv[2], None, sys.argv[4])
+        else:
+            main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
