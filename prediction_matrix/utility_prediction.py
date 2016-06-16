@@ -155,7 +155,7 @@ def find_multiple_column_indices_hdf5(h5p, items_with_path):
 
 def find_column_indices_hdf5(h5p, path, items_to_find):
     """Given a path find slices for the array that match a pattern. Items to find can either be a single
-        item, a list, or a tuple. It matches items vertically."""
+        item, a list, or a tuple. The function matches items vertically."""
 
     split_path = path.split("/")
     if "column_annotations" == path[-1]:
