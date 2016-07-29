@@ -475,6 +475,12 @@ def build_hdf5_matrix(hdf5p, data_dict, data_translate_dict_list, data_sort_key_
                                 position = position_map[str(field_value)]
                                 if core_array[i, position] == 0:
                                     core_array[i, position] = j + 1
+                            elif process == "occurs_in_list":
+                                position = position_map[str(field_value)]
+                                core_array[i, position] = 1
+                            elif process == "occurs_n_times_in_list":
+                                position = position_map[str(field_value)]
+                                core_array[i, position] += 1
                         j += 1
                 i += 1
 
