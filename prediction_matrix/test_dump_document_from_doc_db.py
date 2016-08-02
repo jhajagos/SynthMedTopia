@@ -44,12 +44,11 @@ class TestDumpJSON(unittest.TestCase):
                     data_dict = data_dicts[key]
                     collection.insert(data_dict)
 
-    def test_something(self):
+    def test_extract(self):
 
         batches_dict_1 = dump_documents_from_doc_db.main({"independent.classes.discharge.gender": "F"}, "./test/",
                                                          "test_dump_docs_1",
                                                          self.test_config["mongo_db_config"])
-
 
         with open(batches_dict_1[0]["data_json_file"], "r") as f:
             data_dict_1 = json.load(f)
@@ -61,7 +60,6 @@ class TestDumpJSON(unittest.TestCase):
 
         with open(batches_dict_2[0]["data_json_file"], "r") as f:
             data_dict_2 = json.load(f)
-
             self.assertEquals(3, len(data_dict_2))
 
 

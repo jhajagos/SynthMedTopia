@@ -233,14 +233,20 @@ pipeline.
 
 # Going from JSON to HDF5
 
-Mapping to the matrix HDF5 makes it easier use data in machine learning or
+Mapping to a matrix in HDF5 makes it easier use data in machine learning or
 data mining applications. Fundamentally, these methods work on matrices and 
 not on nested lists.
 
 ## Mapping a flat document
 
+### Categorical Variables
 
+### Float / Integer Variables
 
 ## Mapping a nested document
 
 ## Mapping a list of elements
+
+### Mapping an ordered list
+
+### Mapping a numeric list

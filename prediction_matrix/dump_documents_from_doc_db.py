@@ -3,24 +3,12 @@ This program extracts a collection from a MongoDB instance and formats in a way 
 pipeline works.
 """
 
-[
-    {
-        "batch_id": 1,
-        "data_json_file": "C:\\Users\\janos\\GitHub\\SynthMedTopia\\prediction_matrix\\test\\transactions_split_1_20160323.json",
-        "sort_order_file_name": "C:\\Users\\janos\\GitHub\\SynthMedTopia\\prediction_matrix\\test\\transactions_split_1_key_order_20160323.json"
-    },
-    {
-        "batch_id": 2,
-        "data_json_file": "C:\\Users\\janos\\GitHub\\SynthMedTopia\\prediction_matrix\\test\\transactions_split_2_20160323.json",
-        "sort_order_file_name": "C:\\Users\\janos\\GitHub\\SynthMedTopia\\prediction_matrix\\test\\transactions_split_2_key_order_20160323.json"
-    }
-]
-
 import pymongo
 import os
 import json
-import gzip
+import sys
 
+#import gzip
 # def data_dict_load(data_dict_json_file_name):
 #
 #     if data_dict_json_file_name[-2:] == "gz":
@@ -95,7 +83,14 @@ def main(query_to_run, base_directory, base_name, runtime_config, size_of_batche
 
     return file_batches_dict
 
-
-
 if __name__ == "__main__":
-    pass
+    query_to_run = sys.argv[1]
+    base_directory = sys.argv[2]
+    base_name = sys.argv[3]
+    runtime_config_json = sys.argv[4]
+
+    with open(runtime_config_json, "r") as f:
+        runtime_config = json.load(f)
+
+    #Needs to be tested
+    main(query_to_run, base_directory, base_name, runtime_config["mongo_db_config"])
