@@ -8,14 +8,12 @@ except ImportError:
     import json as ujson
 
 import json
-
 import os
 import datetime
 import time
 import sys
 import gzip
 import shutil
-
 
 def generate_date_stamp():
     return time.strftime("%Y%m%d", time.gmtime())

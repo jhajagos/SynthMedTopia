@@ -2,6 +2,8 @@ import pymongo
 import json
 import sys
 
+from utility_prediction import data_dict_load
+
 """
 A simple program for loading JSON dicts into a MongoDB collection
 """
@@ -36,13 +38,24 @@ def main(json_json_files_to_process, runtime_json, collection_name_override=None
     with open(json_json_files_to_process, "r") as fj:
         json_files_to_to_process = json.load(fj)
 
+        j = 0
         for json_file_dict in json_files_to_to_process:
             json_file_name = json_file_dict["data_json_file"]
             print("Loading '%s'" % json_file_name)
-            with open(json_file_name, "r") as fj:
-                data_dict = json.load(fj)
-                for datum_key in data_dict:
-                    collection.insert(data_dict[datum_key])
+
+            data_dict = data_dict_load(json_file_name)
+            i = 0
+            for datum_key in data_dict:
+
+                collection.insert(data_dict[datum_key], check_keys=False) # Have to makes sure keys do not have a "." or "$" in it
+
+                if i > 0 and i % 500 == 0:
+                    print("Inserted '%s' documents" % i)
+
+                i += 1
+            j += i
+
+        print("Inserted '%s' total documents" % j)
 
     print("Added %s items in collection '%s' housed in database '%s'" % (collection.count() - initial_collection_count, collection_name, database_name))
 

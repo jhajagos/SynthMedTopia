@@ -3,45 +3,56 @@ This program extracts a collection from a MongoDB instance and formats in a way 
 pipeline works.
 """
 
+try:
+    import ujson
+except ImportError:
+    import json as ujson
+
 import pymongo
 import os
 import json
 import sys
-
-#import gzip
-# def data_dict_load(data_dict_json_file_name):
-#
-#     if data_dict_json_file_name[-2:] == "gz":
-#         with gzip.open(data_dict_json_file_name, "rb") as f:
-#             data_dict = json.loads(f.read().decode("ascii"))
-#     else:
-#         with open(data_dict_json_file_name, "rb") as fj:
-#             data_dict = json.load(fj)
-#
-#     return data_dict
+import shutil
+import gzip
+import pprint
 
 
-def write_keyed_json_file(base_directory, base_name, nth_file, file_batches_dict, query_results_dict, key_orders):
+def write_keyed_json_file(base_directory, base_name, nth_file, file_batches_dict, query_results_dict, key_orders,
+                          use_gzip_compression=True, use_ujson=True):
     json_file_name = os.path.join(base_directory, base_name + "_" + str(nth_file) + ".json")
     sort_order_file_name = os.path.join(base_directory, base_name + "_" + str(nth_file) + "_key_order.json")
-    file_batches_dict += [{"batch_id": nth_file, "data_json_file": json_file_name,
-                           "sort_order_name": sort_order_file_name}]
 
     with open(json_file_name, "w") as fw:
-        json.dump(query_results_dict, fw)
+        if not use_ujson:
+            json.dump(query_results_dict, fw, sort_keys=True, indent=4, separators=(',', ': '))
+        else:
+            ujson.dump(query_results_dict, fw)
+
+    if use_gzip_compression:
+        with open(json_file_name, 'rb') as f_in, gzip.open(json_file_name + ".gz", 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
+        os.remove(json_file_name)
+        json_file_name += ".gz"
 
     with open(sort_order_file_name, "w") as fw:
         json.dump(key_orders, fw)
 
+    file_batches_dict += [{"batch_id": nth_file, "data_json_file": json_file_name,
+                           "sort_order_name": sort_order_file_name}]
+
     return file_batches_dict
 
 
-def main(query_to_run, base_directory, base_name, runtime_config, size_of_batches=1000):
+def main(query_to_run, base_directory, base_name, runtime_config, size_of_batches=5000, overwritten_collection_name=None):
 
     connection_string = runtime_config["connection_string"]
     database_name = runtime_config["database_name"]
     client = pymongo.MongoClient(connection_string)
-    collection_name = runtime_config["collection_name"]
+    if overwritten_collection_name is None:
+        collection_name = runtime_config["collection_name"]
+    else:
+        collection_name = overwritten_collection_name
 
     database = client[database_name]
     collection = database[collection_name]
@@ -84,13 +95,23 @@ def main(query_to_run, base_directory, base_name, runtime_config, size_of_batche
     return file_batches_dict
 
 if __name__ == "__main__":
-    query_to_run = sys.argv[1]
+    query_to_run_json = sys.argv[1]
+
+    with open(query_to_run_json, "r") as f:
+        query_to_run = json.load(f)
+
+
+    pprint.pprint(query_to_run)
+
     base_directory = sys.argv[2]
     base_name = sys.argv[3]
     runtime_config_json = sys.argv[4]
 
+    if len(sys.argv) > 5:
+        collection_name = sys.argv[5]
+
     with open(runtime_config_json, "r") as f:
         runtime_config = json.load(f)
 
-    #Needs to be tested
-    main(query_to_run, base_directory, base_name, runtime_config["mongo_db_config"])
+    main(query_to_run, base_directory, base_name, runtime_config["mongo_db_config"],
+         overwritten_collection_name=collection_name)

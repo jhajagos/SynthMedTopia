@@ -5,6 +5,19 @@
 """
 
 import numpy as np
+import gzip
+import json
+
+def data_dict_load(data_dict_json_file_name):
+
+    if data_dict_json_file_name[-2:] == "gz":
+        with gzip.open(data_dict_json_file_name, "rb") as f:
+            data_dict = json.loads(f.read().decode("ascii"))
+    else:
+        with open(data_dict_json_file_name, "rb") as fj:
+            data_dict = json.load(fj)
+
+    return data_dict
 
 
 def get_all_paths(h5py_group):
