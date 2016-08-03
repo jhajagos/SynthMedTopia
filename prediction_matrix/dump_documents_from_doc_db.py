@@ -100,7 +100,6 @@ if __name__ == "__main__":
     with open(query_to_run_json, "r") as f:
         query_to_run = json.load(f)
 
-
     pprint.pprint(query_to_run)
 
     base_directory = sys.argv[2]
@@ -113,5 +112,10 @@ if __name__ == "__main__":
     with open(runtime_config_json, "r") as f:
         runtime_config = json.load(f)
 
+    if "batch_size" in runtime_config["source_db_config"]:
+        batch_size = runtime_config["source_db_config"]["batch_size"]
+    else:
+        batch_size = 5000
+
     main(query_to_run, base_directory, base_name, runtime_config["mongo_db_config"],
-         overwritten_collection_name=collection_name)
+         size_of_batches=batch_size, overwritten_collection_name=collection_name)
