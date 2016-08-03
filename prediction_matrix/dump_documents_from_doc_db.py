@@ -100,7 +100,6 @@ if __name__ == "__main__":
     with open(query_to_run_json, "r") as f:
         query_to_run = json.load(f)
 
-
     pprint.pprint(query_to_run)
 
     base_directory = sys.argv[2]
