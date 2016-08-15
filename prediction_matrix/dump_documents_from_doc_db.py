@@ -80,6 +80,7 @@ def main(query_to_run, base_directory, base_name, runtime_config, size_of_batche
                                                       query_results_dict, key_orders)
             key_orders = []
             query_results_dict = {}
+            print("Extracted %s documents" % i)
 
         i += 1
 
