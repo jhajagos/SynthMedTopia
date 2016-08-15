@@ -51,7 +51,6 @@ def main(json_json_files_to_process, runtime_json, collection_name_override=None
 
                 if i > 0 and i % 500 == 0:
                     print("Inserted '%s' documents" % i)
-
                 i += 1
             j += i
 
