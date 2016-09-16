@@ -234,8 +234,36 @@ pipeline.
 # Going from JSON to HDF5
 
 Mapping to a matrix in HDF5 makes it easier use data in machine learning or
-data mining applications. Fundamentally, these methods work on matrices and 
-not on nested lists.
+data mining applications. A mapping file provides instructions how to map
+elements in JSON document into a matrix.
+
+```json
+[
+    {"path": ["independent", "classes", "discharge"],
+     "variables": [
+         {"cell_value": "age",
+          "type": "integer"
+         },
+         {"cell_value": "age_float",
+          "type": "float"
+         },
+         {
+          "cell_value": "gender",
+          "type": "categorical"
+         },
+         {
+           "cell_value": "admit_date",
+           "type": "datetime"
+         }
+     ]
+]
+```
+The `"path"` correspond to the nested levels of the JSON document. 
+If the `"path"` is not found then the value is not mapped. The `"cell_value"` parameter
+corresponds to the field in the documents. The `"type"` parameter specifies the data type of the field referenced
+by `"cell_value"`
+
+
 
 ## Mapping a flat document
 
