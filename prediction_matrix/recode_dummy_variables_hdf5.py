@@ -1,9 +1,9 @@
 import h5py
 import sys
 import utility_prediction as upx
-import pprint
 import numpy as np
 import csv
+
 
 def main(file_name):
     f5 = h5py.File(file_name, "r")
@@ -82,13 +82,6 @@ def main(file_name):
             for path in annotation_path_list:
                 master_row += csv_dict_path[path].next()
             master_csv_writer.writerow(master_row)
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
