@@ -214,7 +214,7 @@ to be used to split the entries into separate keyed lists. In this example the v
 by the `"test_name"`. This makes it easy to pull out the sequence of tests associated with
 a specific test.
 
-## Running the mapper script
+## Running the DB to document mapper script
 
 Once the `runtime_config.json` and the `mapping_config.json` files running the 
 script is straight forward. The JSON files can have any name but the mapping file
@@ -233,9 +233,8 @@ pipeline.
 
 # Going from JSON to HDF5
 
-Mapping to a matrix in HDF5 makes it easier use data in machine learning or
-data mining applications. A mapping file provides instructions how to map
-elements in JSON document into a matrix.
+Mapping a document to a matrix is an important step in machine learning  mining applications. 
+A mapping file provides instructions for mapping elements in JSON document into a flat 2D matrix format.
 
 ```json
 [
@@ -261,20 +260,74 @@ elements in JSON document into a matrix.
 The `"path"` correspond to the nested levels of the JSON document. 
 If the `"path"` is not found then the value is not mapped. The `"cell_value"` parameter
 corresponds to the field in the documents. The `"type"` parameter specifies the data type of the field referenced
-by `"cell_value"`
+by `"cell_value"`.
 
+## Mapping a simple document
 
-
-## Mapping a flat document
-
-### Categorical Variables
+The simplest document to map is a document not composed of nested lists or nested documents. 
 
 ### Float / Integer Variables
 
-## Mapping a nested document
+### Categorical Variables
 
-## Mapping a list of elements
+In order for categorical variables to be used in a machine learning model it needs to be transformed into a numeric value.
+Such transformations are done throught a process known as dummy coding.
+
+## Mapping a nested list
+
+Often a document will contain a nested list. A nested list is used to represent a one-to-many relationship which is 
+found in many databases.
 
 ### Mapping an ordered list
 
+Sometimes the order of the nested list is important and should be represented in the list. As an example is a nested list
+of categorical variables.
+
+```json
+ {
+        "path": ["independent", "classes", "diagnosis"],
+        "type": "categorical_list",
+        "process": "list_position",
+        "field": "code",
+        "name": "discharge_diagnosis",
+        "label": "code",
+        "cell_value": "code",
+        "description": "description"
+    }
+```
+
 ### Mapping a numeric list
+
+```json
+{
+        "path": ["independent", "classes", "lab"],
+        "export_path": ["independent", "classes", "lab", "count"],
+        "type": "classes_templates",
+        "class_type": "variables",
+        "class_template":
+            {
+                "process": "count",
+                "type": "numeric_list",
+                "cell_value": "value"
+            }
+ }
+```
+
+### Mapping multiple targets 
+
+```json
+{
+        "path": ["independent", "classes", "lab"],
+        "export_path": ["independent", "classes", "lab", "category"],
+        "type": "classes_templates",
+        "class_type": "variables",
+        "class_template":
+            {
+                "process": "count_categories",
+                "type": "categorical_list",
+                "cell_value": "result_category"
+            }
+}
+```
+
+## Running the mapper script document to HDF5 matrix
