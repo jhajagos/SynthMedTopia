@@ -231,10 +231,11 @@ is stored in a file that starts with `"base_file_name"` defined parameter
 and ends in `"_batches.json"`. This file is needed for further steps in the 
 pipeline.
 
-# Going from JSON to HDF5
+# Mapping a JSON Document to HDF5
 
 Mapping a document to a matrix is an important step in machine learning  mining applications. 
-A mapping file provides instructions for mapping elements in JSON document into a flat 2D matrix format.
+A mapping file provides instructions for mapping elements in JSON document into a flat 2D matrix format. 
+A JSON document can be mapped multiple ways.
 
 ```json
 [
@@ -255,12 +256,16 @@ A mapping file provides instructions for mapping elements in JSON document into 
            "type": "datetime"
          }
      ]
+   }  
 ]
 ```
 The `"path"` correspond to the nested levels of the JSON document. 
 If the `"path"` is not found then the value is not mapped. The `"cell_value"` parameter
 corresponds to the field in the documents. The `"type"` parameter specifies the data type of the field referenced
 by `"cell_value"`.
+
+A JSON document can be mapped to multiple matrices stored in a HDF5 container.
+
 
 ## Mapping a simple document
 
@@ -273,7 +278,7 @@ The simplest document to map is a document not composed of nested lists or neste
 In order for categorical variables to be used in a machine learning model it needs to be transformed into a numeric value.
 Such transformations are done throught a process known as dummy coding.
 
-## Mapping a nested list
+## Mapping nested lists
 
 Often a document will contain a nested list. A nested list is used to represent a one-to-many relationship which is 
 found in many databases.
@@ -284,36 +289,39 @@ Sometimes the order of the nested list is important and should be represented in
 of categorical variables.
 
 ```json
- {
-        "path": ["independent", "classes", "diagnosis"],
-        "type": "categorical_list",
-        "process": "list_position",
-        "field": "code",
-        "name": "discharge_diagnosis",
-        "label": "code",
-        "cell_value": "code",
-        "description": "description"
-    }
+{
+    "path": ["independent", "classes", "diagnosis"],
+    "type": "categorical_list",
+    "process": "list_position",
+    "field": "code",
+    "name": "discharge_diagnosis",
+    "label": "code",
+    "cell_value": "code",
+    "description": "description"
+}
 ```
 
 ### Mapping a numeric list
 
 ```json
 {
-        "path": ["independent", "classes", "lab"],
-        "export_path": ["independent", "classes", "lab", "count"],
-        "type": "classes_templates",
-        "class_type": "variables",
-        "class_template":
-            {
-                "process": "count",
-                "type": "numeric_list",
-                "cell_value": "value"
-            }
- }
+    "path": ["independent", "classes", "lab"],
+    "export_path": ["independent", "classes", "lab", "count"],
+    "type": "classes_templates",
+    "class_type": "variables",
+    "class_template":
+        {
+            "process": "count",
+            "type": "numeric_list",
+            "cell_value": "value"
+        }
+}
 ```
 
-### Mapping multiple targets 
+```"process": "count"```, ```"process": "median"```, ```"process": "last_item"```, ```"process": "first_item"```  
+
+
+### Mapping a categorical list
 
 ```json
 {
@@ -330,4 +338,53 @@ of categorical variables.
 }
 ```
 
-## Running the mapper script document to HDF5 matrix
+### Mapping multiple targets 
+
+```json
+{
+    "path": ["independent", "classes", "lab"],
+    "export_path": ["independent", "classes", "lab", "category"],
+    "type": "classes_templates",
+    "class_type": "variables",
+    "class_template":
+        {
+            "process": "count_categories",
+            "type": "categorical_list",
+            "cell_value": "result_category"
+        }
+}
+```
+
+### Filter criteria
+
+```json
+{
+    "path": ["independent", "classes", "lab"],
+    "export_path": ["independent", "classes", "lab", "day", "category"],
+    "type": "classes_templates",
+    "class_type": "variables",
+    "class_template":
+        {
+            "process": "count_categories",
+            "type": "categorical_list",
+            "cell_value": "result_category",
+            "filter": {"field": "day", "value": 1}
+        }
+}
+```
+
+## Running the mapper script for a JSON document to HDF5 matrix
+
+```bash
+python build_hdf5_matrix_from_document.py data_file_base_name batch_dict.json data_template.json
+```
+
+## Exploring the HDF5 file in Python
+
+
+## Filtering the generated HDF5 file
+
+
+## Post processing the generated HDF5 file
+
+
